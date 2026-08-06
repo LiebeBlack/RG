@@ -329,7 +329,7 @@ function parseFilenameToTitle(filename) {
     return name || 'Película Desconocida';
 }
 
-function handleFiles(files) {
+async function handleFiles(files) {
     const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
     if (imageFiles.length === 0) {
         showToast('No se encontraron archivos de imagen válidos', 'error');
@@ -361,7 +361,7 @@ function handleFiles(files) {
     }
 
     saveToLocalStorage();
-    renderMovies();
+    await renderMovies();
 
     if (processedCount > 0) {
         showToast(`${processedCount} elementos registrados. Exporta la BD para guardar.`, 'success');
@@ -543,13 +543,13 @@ function renderSelectedList() {
             <button class="remove-item" title="Quitar ${safeTitle}" aria-label="Quitar ${safeTitle} de la lista"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
         `;
         
-        li.querySelector('.remove-item').addEventListener('click', () => {
+        li.querySelector('.remove-item').addEventListener('click', async () => {
             AppState.selectedMovies.delete(movie.id);
             const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
             if (card) {
                 card.classList.remove('selected');
             }
-            renderMovies();
+            await renderMovies();
         });
         
         DOM.selectedMoviesList.appendChild(li);
@@ -722,14 +722,14 @@ function setupEventListeners() {
     });
 
     // Búsqueda con debounce y filtros (funciona en ambas vistas)
-    const debouncedRender = debounce(renderMovies, 200);
+    const debouncedRender = debounce(async () => await renderMovies(), 200);
     if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedRender);
-    if (DOM.categoryFilter) DOM.categoryFilter.addEventListener('change', renderMovies);
-    if (DOM.sortFilter) DOM.sortFilter.addEventListener('change', renderMovies);
+    if (DOM.categoryFilter) DOM.categoryFilter.addEventListener('change', async () => await renderMovies());
+    if (DOM.sortFilter) DOM.sortFilter.addEventListener('change', async () => await renderMovies());
     if (DOM.languageFilter) {
-        DOM.languageFilter.addEventListener('change', (e) => {
+        DOM.languageFilter.addEventListener('change', async (e) => {
             AppState.searchLanguage = e.target.value;
-            renderMovies();
+            await renderMovies();
         });
     }
 
@@ -737,8 +737,8 @@ function setupEventListeners() {
     // SOLO ADMIN: Archivos y Drag & Drop
     // ═══════════════════════════════════════════
     if (DOM.fileUpload) {
-        DOM.fileUpload.addEventListener('change', (e) => { 
-            handleFiles(e.target.files); 
+        DOM.fileUpload.addEventListener('change', async (e) => { 
+            await handleFiles(e.target.files); 
             e.target.value = ''; 
         });
     }
@@ -786,7 +786,7 @@ function setupEventListeners() {
         });
     }
     if (DOM.addMovieForm) {
-        DOM.addMovieForm.addEventListener('submit', (e) => {
+        DOM.addMovieForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const titleInput = document.getElementById('movie-title');
             const urlInput = document.getElementById('movie-url');
@@ -815,7 +815,7 @@ function setupEventListeners() {
                 timestamp: Date.now() 
             });
             saveToLocalStorage(); 
-            renderMovies(); 
+            await renderMovies(); 
             closeModal(DOM.addModal); 
             DOM.addMovieForm.reset();
             showToast('Película añadida con éxito', 'success');
@@ -830,7 +830,7 @@ function setupEventListeners() {
         });
     }
     if (DOM.editMovieForm) {
-        DOM.editMovieForm.addEventListener('submit', (e) => {
+        DOM.editMovieForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-movie-id')?.value;
             const title = document.getElementById('edit-movie-title')?.value.trim();
@@ -856,7 +856,7 @@ function setupEventListeners() {
                 };
                 
                 saveToLocalStorage(); 
-                renderMovies(); 
+                await renderMovies(); 
                 closeModal(DOM.editModal);
                 showToast('Película actualizada con éxito', 'success');
             } else {
@@ -865,7 +865,7 @@ function setupEventListeners() {
         });
     }
     if (DOM.btnDeleteMovie) {
-        DOM.btnDeleteMovie.addEventListener('click', () => {
+        DOM.btnDeleteMovie.addEventListener('click', async () => {
             const id = document.getElementById('edit-movie-id')?.value;
             if (!id) return;
             
@@ -873,7 +873,7 @@ function setupEventListeners() {
                 AppState.movies = AppState.movies.filter(m => m.id !== id);
                 AppState.selectedMovies.delete(id);
                 saveToLocalStorage();
-                renderMovies();
+                await renderMovies();
                 closeModal(DOM.editModal);
                 showToast('Película eliminada del catálogo', 'success');
             }
@@ -906,12 +906,12 @@ function setupEventListeners() {
     }
     
     if (DOM.btnDeselectAllModal) {
-        DOM.btnDeselectAllModal.addEventListener('click', () => { 
+        DOM.btnDeselectAllModal.addEventListener('click', async () => { 
             AppState.selectedMovies.clear();
             document.querySelectorAll('.movie-card.selected').forEach(card => {
                 card.classList.remove('selected');
             });
-            renderMovies(); 
+            await renderMovies(); 
             closeModal(DOM.selectionModal);
             showToast('Películas deseleccionadas', 'info');
         });
@@ -970,16 +970,15 @@ function setupEventListeners() {
     }
     
     if (DOM.btnClearDb) {
-        DOM.btnClearDb.addEventListener('click', () => {
+        DOM.btnClearDb.addEventListener('click', async () => {
             if (confirm('⚠️ ¿Vaciar los cambios locales no exportados? (Se recargará desde catalogo.json)')) {
                 localStorage.removeItem('cinebox_movies');
                 cleanupObjectUrls(); // Cleanup memory
                 AppState.movies = [];
                 AppState.selectedMovies.clear();
-                loadDatabase().then(() => {
-                    renderMovies();
-                    showToast('Memoria local borrada y catálogo recargado.', 'success');
-                });
+                await loadDatabase();
+                await renderMovies();
+                showToast('Memoria local borrada y catálogo recargado.', 'success');
             }
         });
     }
