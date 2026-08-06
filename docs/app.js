@@ -12,7 +12,8 @@ const AppState = {
     movies: [],
     selectedMovies: new Set(),
     isLoading: true,
-    defaultPlaceholder: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMjAwIDMwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZjIyMzEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM0ZjU1NmUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNpbiBQb3J0YWRhPC90ZXh0Pjwvc3ZnPg=="
+    defaultPlaceholder: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMjAwIDMwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZjIyMzEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM0ZjU1NmUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNpbiBQb3J0YWRhPC90ZXh0Pjwvc3ZnPg==",
+    objectUrls: new Set() // Track object URLs for cleanup
 };
 
 // Detectar si estamos en la página de administración (modders.html)
@@ -90,6 +91,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
         showLoading(false);
     }
+});
+
+// Cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+    cleanupObjectUrls();
 });
 
 /**
@@ -172,30 +178,41 @@ function handleFiles(files) {
         const title = parseFilenameToTitle(file.name);
         const staticPath = `./caratulas/${file.name}`;
         const objectUrl = URL.createObjectURL(file);
-        
+
+        // Track object URL for cleanup
+        AppState.objectUrls.add(objectUrl);
+
         const newMovie = {
-            id: generateId(), 
-            title: title, 
-            coverUrl: staticPath, 
+            id: generateId(),
+            title: title,
+            coverUrl: staticPath,
             previewUrl: objectUrl,
-            category: 'Otro', 
+            category: 'Otro',
             timestamp: Date.now()
         };
-        
+
         if (!AppState.movies.find(m => m.coverUrl === staticPath)) {
             AppState.movies.push(newMovie);
             processedCount++;
         }
     }
-    
+
     saveToLocalStorage();
     renderMovies();
-    
+
     if (processedCount > 0) {
-        showToast(`${processedCount} ítems registrados. Exporta la BD para guardar.`, 'success');
+        showToast(`${processedCount} elementos registrados. Exporta la BD para guardar.`, 'success');
     } else {
-        showToast('Los ítems ya existían en el catálogo.', 'info');
+        showToast('Los elementos ya existían en el catálogo.', 'info');
     }
+}
+
+// Cleanup function for object URLs
+function cleanupObjectUrls() {
+    AppState.objectUrls.forEach(url => {
+        URL.revokeObjectURL(url);
+    });
+    AppState.objectUrls.clear();
 }
 
 /**
@@ -240,13 +257,12 @@ function renderMovies() {
             const fragment = document.createDocumentFragment();
             
             filtered.forEach((movie, index) => {
-                const isSelected = AppState.selectedMovies.has(movie.id);
                 const card = document.createElement('div');
-                card.className = `movie-card${isSelected ? ' selected' : ''}`;
+                card.className = 'movie-card';
                 card.dataset.id = movie.id;
                 card.setAttribute('role', 'listitem');
                 card.setAttribute('tabindex', '0');
-                card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}${isSelected ? ' (seleccionada)' : ''}`);
+                card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
                 // Stagger animation delay per card (max 1.5s)
                 card.style.animationDelay = `${Math.min(index * 0.04, 1.5)}s`;
                 
@@ -338,6 +354,10 @@ function renderSelectedList() {
         
         li.querySelector('.remove-item').addEventListener('click', () => {
             AppState.selectedMovies.delete(movie.id);
+            const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
+            if (card) {
+                card.classList.remove('selected');
+            }
             renderMovies();
         });
         
@@ -690,7 +710,10 @@ function setupEventListeners() {
     
     if (DOM.btnDeselectAllModal) {
         DOM.btnDeselectAllModal.addEventListener('click', () => { 
-            AppState.selectedMovies.clear(); 
+            AppState.selectedMovies.clear();
+            document.querySelectorAll('.movie-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
             renderMovies(); 
             closeModal(DOM.selectionModal);
             showToast('Películas deseleccionadas', 'info');
@@ -767,7 +790,8 @@ function setupEventListeners() {
         DOM.btnClearDb.addEventListener('click', () => {
             if (confirm('⚠️ ¿Vaciar los cambios locales no exportados? (Se recargará desde catalogo.json)')) {
                 localStorage.removeItem('cinebox_movies');
-                AppState.movies = []; 
+                cleanupObjectUrls(); // Cleanup memory
+                AppState.movies = [];
                 AppState.selectedMovies.clear();
                 loadDatabase().then(() => {
                     renderMovies();

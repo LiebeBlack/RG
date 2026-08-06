@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ky! Movies — Tu catálogo de películas favorito. Busca, elige y comparte tus pelis por WhatsApp.">
+    <meta name="description" content="Ky! Movies — Tu catálogo de películas favorito. Busca, elige y comparte tus películas por WhatsApp.">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Ky! Movies">
     <meta property="og:description" content="Descubre y comparte tu catálogo de películas. Interfaz sencilla con búsqueda, filtros y envío por WhatsApp.">
@@ -24,7 +24,7 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay" role="status" aria-label="Cargando">
-        <div class="spinner"></div>
+        <div class="spinner"><i class="fa-solid fa-film fa-spin" aria-hidden="true"></i></div>
         <p id="loading-text">Cargando catálogo...</p>
     </div>
 
@@ -60,7 +60,7 @@
                 <option value="Comedia">Comedia</option>
                 <option value="Drama">Drama</option>
                 <option value="Terror">Terror</option>
-                <option value="Sci-Fi">Ciencia ficción</option>
+                <option value="Sci-Fi">Ciencia Ficción</option>
                 <option value="Animación">Animación</option>
                 <option value="Otro">Otro</option>
             </select>
@@ -76,7 +76,7 @@
     <main class="container" role="main">
         <div id="empty-state" class="empty-state hidden" aria-hidden="true">
             <div class="empty-icon-wrapper">
-                <i class="fa-solid fa-photo-film fa-4x" aria-hidden="true"></i>
+                <i class="fa-solid fa-film fa-4x" aria-hidden="true"></i>
             </div>
             <h2>Aún no hay películas</h2>
             <p>El catálogo estará disponible pronto.<br>¡Vuelve más tarde para ver las películas!</p>
@@ -91,7 +91,7 @@
     <footer role="contentinfo">
         <div class="container">
             <p>Ky! Movies &copy; 2026. Tu catálogo de películas.</p>
-            <a href="./modders.html" class="admin-link" aria-label="Panel de administración">[Admin]</a>
+            <a href="./modders.html" class="admin-link" aria-label="Panel de administración"><i class="fa-solid fa-gear" aria-hidden="true"></i> [Admin]</a>
         </div>
     </footer>
 

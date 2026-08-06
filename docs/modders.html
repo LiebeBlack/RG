@@ -29,7 +29,7 @@
     
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-label="Cargando">
-        <div class="spinner"></div>
+        <div class="spinner"><i class="fa-solid fa-film fa-spin" aria-hidden="true"></i></div>
         <p id="loading-text">Sincronizando catálogo...</p>
     </div>
 
@@ -82,7 +82,7 @@
                 <option value="Comedia">Comedia</option>
                 <option value="Drama">Drama</option>
                 <option value="Terror">Terror</option>
-                <option value="Sci-Fi">Ciencia ficción</option>
+                <option value="Sci-Fi">Ciencia Ficción</option>
                 <option value="Animación">Animación</option>
                 <option value="Otro">Otro</option>
             </select>
@@ -98,10 +98,10 @@
     <main class="container" role="main">
         <div id="empty-state" class="empty-state hidden" aria-hidden="true">
             <div class="empty-icon-wrapper">
-                <i class="fa-solid fa-photo-film fa-4x" aria-hidden="true"></i>
+                <i class="fa-solid fa-film fa-4x" aria-hidden="true"></i>
             </div>
             <h2>No hay películas todavía</h2>
-            <p>Arrastra tus carátulas aquí para agregarlas.<br>Cuando termines, exporta tu <b>catalogo.json</b> para usarlo.</p>
+            <p>Arrastra tus carátulas aquí para agregarlas.<br>Cuando termines, exporta tu <b>catálogo.json</b> para usarlo.</p>
         </div>
         
         <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
@@ -113,6 +113,7 @@
     <footer role="contentinfo">
         <div class="container">
             <p>Ky! Movies &copy; 2026. Tu catálogo de películas.</p>
+            <a href="./index.html" class="admin-link" aria-label="Volver a vista de usuario"><i class="fa-solid fa-house" aria-hidden="true"></i> [Vista Usuario]</a>
         </div>
     </footer>
 
