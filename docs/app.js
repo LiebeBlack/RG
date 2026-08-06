@@ -248,13 +248,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await loadDatabase();
         setupEventListeners();
-        renderMovies();
+        await renderMovies();
     } catch (error) {
         console.error('Error durante la inicialización:', error);
         showToast('Error al cargar el catálogo', 'error');
-    } finally {
-        showLoading(false);
     }
+    showLoading(false);
 });
 
 // Cleanup on page unload to prevent memory leaks
@@ -384,146 +383,139 @@ function cleanupObjectUrls() {
  * Usa View Transitions API si está disponible para transiciones suaves.
  * Integra TMDB API cuando está configurada.
  */
-async async function renderMovies() {
-    const doRender = async () => {
-        const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
-        const category = DOM.categoryFilter ? DOM.categoryFilter.value : 'all';
-        const sort = DOM.sortFilter ? DOM.sortFilter.value : 'recent';
+async function renderMovies() {
+    const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
+    const category = DOM.categoryFilter ? DOM.categoryFilter.value : 'all';
+    const sort = DOM.sortFilter ? DOM.sortFilter.value : 'recent';
 
-        let moviesToRender = [];
+    let moviesToRender = [];
 
-        // Si hay búsqueda y TMDB está configurado, usar API
-        if (query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-            const tmdbResults = await searchTMDB(query, AppState.searchLanguage);
-            moviesToRender = tmdbResults;
-        } else if (category !== 'all' && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-            // Si hay filtro de categoría y TMDB está configurado
-            const genreId = getGenreIdFromName(category);
-            if (genreId) {
-                moviesToRender = await getMoviesByGenre(genreId, AppState.searchLanguage);
-            } else {
-                moviesToRender = AppState.movies;
-            }
-        } else if (!query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-            // Si no hay búsqueda ni filtro, mostrar populares de TMDB
-            moviesToRender = await getPopularTMDB(AppState.searchLanguage);
+    // Si hay búsqueda y TMDB está configurado, usar API
+    if (query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+        const tmdbResults = await searchTMDB(query, AppState.searchLanguage);
+        moviesToRender = tmdbResults;
+    } else if (category !== 'all' && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+        // Si hay filtro de categoría y TMDB está configurado
+        const genreId = getGenreIdFromName(category);
+        if (genreId) {
+            moviesToRender = await getMoviesByGenre(genreId, AppState.searchLanguage);
         } else {
-            // Fallback a base de datos local
             moviesToRender = AppState.movies;
         }
-
-        let filtered = moviesToRender.filter(m => {
-            const matchesSearch = query === '' ||
-                                  m.title.toLowerCase().includes(query.toLowerCase()) ||
-                                  (m.originalTitle && m.originalTitle.toLowerCase().includes(query.toLowerCase()));
-            const matchesCategory = category === 'all' || m.category === category;
-            return matchesSearch && matchesCategory;
-        });
-
-        if (sort === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title, 'es'));
-        else if (sort === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title, 'es'));
-        else filtered.sort((a, b) => {
-            // Usar releaseDate para TMDB, timestamp para local
-            const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.timestamp || 0);
-            const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.timestamp || 0);
-            return dateB - dateA;
-        });
-
-        if (!DOM.grid) return;
-        DOM.grid.innerHTML = '';
-        
-        // Update total counter
-        if (DOM.totalCount) {
-            DOM.totalCount.textContent = filtered.length;
-        }
-        
-        if (filtered.length === 0) {
-            if (DOM.emptyState) {
-                DOM.emptyState.classList.remove('hidden');
-                DOM.emptyState.setAttribute('aria-hidden', 'false');
-            }
-        } else {
-            if (DOM.emptyState) {
-                DOM.emptyState.classList.add('hidden');
-                DOM.emptyState.setAttribute('aria-hidden', 'true');
-            }
-            const fragment = document.createDocumentFragment();
-            
-            filtered.forEach((movie, index) => {
-                const card = document.createElement('div');
-                card.className = 'movie-card';
-                card.dataset.id = movie.id;
-                card.setAttribute('role', 'listitem');
-                card.setAttribute('tabindex', '0');
-                card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
-                // Stagger animation delay per card (max 1.5s)
-                card.style.animationDelay = `${Math.min(index * 0.04, 1.5)}s`;
-                
-                const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
-                const safeTitle = escapeHtml(movie.title);
-                const safeOriginalTitle = movie.originalTitle && movie.originalTitle !== movie.title ? escapeHtml(movie.originalTitle) : '';
-                const safeCategory = escapeHtml(movie.category || 'Otro');
-
-                let editBadgeHTML = '';
-                if (isAdmin) {
-                    editBadgeHTML = `<div class="edit-badge" title="Editar detalles" role="button" tabindex="0" aria-label="Editar ${safeTitle}"><i class="fa-solid fa-pen" aria-hidden="true"></i></div>`;
-                }
-
-                // Mostrar título original si es diferente al título en el idioma actual
-                const titleHTML = safeOriginalTitle ?
-                    `<h3 class="card-title">${safeTitle}</h3><p class="card-original-title">${safeOriginalTitle}</p>` :
-                    `<h3 class="card-title">${safeTitle}</h3>`;
-
-                card.innerHTML = `
-                    <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
-                    ${editBadgeHTML}
-                    <div class="card-img-container">
-                        <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${AppState.defaultPlaceholder}'">
-                    </div>
-                    <div class="card-overlay">
-                        ${titleHTML}
-                        <p class="card-category">${safeCategory}</p>
-                    </div>
-                `;
-                
-                // Evento para editar (solo en modo modder)
-                if (isAdmin) {
-                    const editBadge = card.querySelector('.edit-badge');
-                    if (editBadge) {
-                        editBadge.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            openEditModal(movie);
-                        });
-                        editBadge.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openEditModal(movie);
-                            }
-                        });
-                    }
-                }
-                
-                card.addEventListener('click', () => toggleSelection(movie.id, card));
-                card.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        toggleSelection(movie.id, card);
-                    }
-                });
-                fragment.appendChild(card);
-            });
-            
-            DOM.grid.appendChild(fragment);
-        }
-        updateCartUI();
-    };
-
-    // Use View Transitions API if available for smooth filter/search changes
-    if (document.startViewTransition) {
-        document.startViewTransition(doRender);
+    } else if (!query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+        // Si no hay búsqueda ni filtro, mostrar populares de TMDB
+        moviesToRender = await getPopularTMDB(AppState.searchLanguage);
     } else {
-        doRender();
+        // Fallback a base de datos local
+        moviesToRender = AppState.movies;
+    }
+
+    let filtered = moviesToRender.filter(m => {
+        const matchesSearch = query === '' ||
+                              m.title.toLowerCase().includes(query.toLowerCase()) ||
+                              (m.originalTitle && m.originalTitle.toLowerCase().includes(query.toLowerCase()));
+        const matchesCategory = category === 'all' || m.category === category;
+        return matchesSearch && matchesCategory;
+    });
+
+    if (sort === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    else if (sort === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title, 'es'));
+    else filtered.sort((a, b) => {
+        // Usar releaseDate para TMDB, timestamp para local
+        const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.timestamp || 0);
+        const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.timestamp || 0);
+        return dateB - dateA;
+    });
+
+    if (!DOM.grid) return;
+    DOM.grid.innerHTML = '';
+
+    // Update total counter
+    if (DOM.totalCount) {
+        DOM.totalCount.textContent = filtered.length;
+    }
+
+    if (filtered.length === 0) {
+        if (DOM.emptyState) {
+            DOM.emptyState.classList.remove('hidden');
+            DOM.emptyState.setAttribute('aria-hidden', 'false');
+        }
+    } else {
+        if (DOM.emptyState) {
+            DOM.emptyState.classList.add('hidden');
+            DOM.emptyState.setAttribute('aria-hidden', 'true');
+        }
+        const fragment = document.createDocumentFragment();
+
+        filtered.forEach((movie, index) => {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.dataset.id = movie.id;
+            card.setAttribute('role', 'listitem');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
+            // Stagger animation delay per card (max 1.5s)
+            card.style.animationDelay = `${Math.min(index * 0.04, 1.5)}s`;
+
+            const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
+            const safeTitle = escapeHtml(movie.title);
+            const safeOriginalTitle = movie.originalTitle && movie.originalTitle !== movie.title ? escapeHtml(movie.originalTitle) : '';
+            const safeCategory = escapeHtml(movie.category || 'Otro');
+
+            let editBadgeHTML = '';
+            if (isAdmin) {
+                editBadgeHTML = `<div class="edit-badge" title="Editar detalles" role="button" tabindex="0" aria-label="Editar ${safeTitle}"><i class="fa-solid fa-pen" aria-hidden="true"></i></div>`;
+            }
+
+            // Mostrar título original si es diferente al título en el idioma actual
+            const titleHTML = safeOriginalTitle ?
+                `<h3 class="card-title">${safeTitle}</h3><p class="card-original-title">${safeOriginalTitle}</p>` :
+                `<h3 class="card-title">${safeTitle}</h3>`;
+
+            card.innerHTML = `
+                <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
+                ${editBadgeHTML}
+                <div class="card-img-container">
+                    <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${AppState.defaultPlaceholder}'">
+                </div>
+                <div class="card-overlay">
+                    ${titleHTML}
+                    <p class="card-category">${safeCategory}</p>
+                </div>
+            `;
+
+            // Evento para editar (solo en modo modder)
+            if (isAdmin) {
+                const editBadge = card.querySelector('.edit-badge');
+                if (editBadge) {
+                    editBadge.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openEditModal(movie);
+                    });
+                    editBadge.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openEditModal(movie);
+                        }
+                    });
+                }
+            }
+
+            // Click para seleccionar/deseleccionar
+            card.addEventListener('click', () => {
+                toggleSelection(movie.id);
+            });
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleSelection(movie.id);
+                }
+            });
+
+            fragment.appendChild(card);
+        });
+
+        DOM.grid.appendChild(fragment);
     }
 }
 
