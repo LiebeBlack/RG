@@ -20,7 +20,14 @@ const AppState = {
     searchLanguage: 'es', // 'es' para español, 'en' para inglés
     tmdbMovies: [], // Caché de películas de TMDB
     defaultPlaceholder: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMjAwIDMwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZTFhMWEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiNmZmZmZmYiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNpbiBQb3J0YWRhPC90ZXh0Pjwvc3ZnPg==",
-    objectUrls: new Set() // Track object URLs for cleanup
+    objectUrls: new Set(), // Track object URLs for cleanup
+    currentPage: 1, // Página actual para infinite scroll
+    totalPages: 1, // Total de páginas disponibles
+    isLoadingMore: false, // Estado de carga incremental
+    hasMorePages: true, // Si hay más páginas para cargar
+    currentQuery: '', // Búsqueda actual
+    currentCategory: 'all', // Categoría actual
+    currentMode: 'tmdb' // 'tmdb' o 'local'
 };
 
 // Detectar si estamos en la página de administración (modders.html)
@@ -39,21 +46,21 @@ function debounce(fn, delay = 250) {
  * TMDB API Functions
  */
 
-// Buscar películas en TMDB
-async function searchTMDB(query, language = 'es') {
+// Buscar películas en TMDB (carga incremental)
+async function searchTMDB(query, language = 'es', page = 1) {
     if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
         console.warn("TMDB API key no configurada. Usando base de datos local.");
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 
     try {
         const response = await fetch(
-            `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=${language}&include_adult=false`
+            `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=${language}&include_adult=false&page=${page}`
         );
         const data = await response.json();
 
         if (data.results) {
-            return data.results.map(movie => ({
+            const movies = data.results.map(movie => ({
                 id: movie.id,
                 tmdbId: movie.id,
                 title: movie.title,
@@ -69,19 +76,20 @@ async function searchTMDB(query, language = 'es') {
                 previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
                 fromTMDB: true
             }));
+            return { movies, totalPages: data.total_pages || 1 };
         }
-        return [];
+        return { movies: [], totalPages: 0 };
     } catch (error) {
         console.error('Error buscando en TMDB:', error);
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 }
 
-// Obtener películas populares de TMDB
+// Obtener películas populares de TMDB (carga incremental)
 async function getPopularTMDB(language = 'es', page = 1) {
     if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
         console.warn("TMDB API key no configurada. Usando base de datos local.");
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 
     try {
@@ -91,7 +99,7 @@ async function getPopularTMDB(language = 'es', page = 1) {
         const data = await response.json();
 
         if (data.results) {
-            return data.results.map(movie => ({
+            const movies = data.results.map(movie => ({
                 id: movie.id,
                 tmdbId: movie.id,
                 title: movie.title,
@@ -107,19 +115,20 @@ async function getPopularTMDB(language = 'es', page = 1) {
                 previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
                 fromTMDB: true
             }));
+            return { movies, totalPages: data.total_pages || 1 };
         }
-        return [];
+        return { movies: [], totalPages: 0 };
     } catch (error) {
         console.error('Error obteniendo populares de TMDB:', error);
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 }
 
-// Obtener películas por género
+// Obtener películas por género (carga incremental)
 async function getMoviesByGenre(genreId, language = 'es', page = 1) {
     if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
         console.warn("TMDB API key no configurada. Usando base de datos local.");
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 
     try {
@@ -129,7 +138,7 @@ async function getMoviesByGenre(genreId, language = 'es', page = 1) {
         const data = await response.json();
 
         if (data.results) {
-            return data.results.map(movie => ({
+            const movies = data.results.map(movie => ({
                 id: movie.id,
                 tmdbId: movie.id,
                 title: movie.title,
@@ -145,11 +154,12 @@ async function getMoviesByGenre(genreId, language = 'es', page = 1) {
                 previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
                 fromTMDB: true
             }));
+            return { movies, totalPages: data.total_pages || 1 };
         }
-        return [];
+        return { movies: [], totalPages: 0 };
     } catch (error) {
         console.error('Error obteniendo películas por género:', error);
-        return [];
+        return { movies: [], totalPages: 0 };
     }
 }
 
@@ -382,33 +392,72 @@ function cleanupObjectUrls() {
  * Motor de Renderizado (Grid Principal)
  * Usa View Transitions API si está disponible para transiciones suaves.
  * Integra TMDB API cuando está configurada.
+ * Sistema de infinite scroll para cargar todas las películas.
  */
-async function renderMovies() {
+async function renderMovies(loadMore = false) {
     const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
     const category = DOM.categoryFilter ? DOM.categoryFilter.value : 'all';
     const sort = DOM.sortFilter ? DOM.sortFilter.value : 'recent';
 
-    let moviesToRender = [];
+    // Detectar si cambiaron los filtros (resetear estado)
+    if (!loadMore && (query !== AppState.currentQuery || category !== AppState.currentCategory)) {
+        AppState.currentQuery = query;
+        AppState.currentCategory = category;
+        AppState.currentPage = 1;
+        AppState.tmdbMovies = [];
+        AppState.hasMorePages = true;
+    }
 
-    // Si hay búsqueda y TMDB está configurado, usar API
+    // Determinar el modo de carga
+    let useTMDB = false;
+    let apiFunction = null;
+    let apiParams = {};
+
     if (query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-        const tmdbResults = await searchTMDB(query, AppState.searchLanguage);
-        moviesToRender = tmdbResults;
+        useTMDB = true;
+        apiFunction = searchTMDB;
+        apiParams = { query, language: AppState.searchLanguage, page: AppState.currentPage };
     } else if (category !== 'all' && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-        // Si hay filtro de categoría y TMDB está configurado
         const genreId = getGenreIdFromName(category);
         if (genreId) {
-            moviesToRender = await getMoviesByGenre(genreId, AppState.searchLanguage);
-        } else {
-            moviesToRender = AppState.movies;
+            useTMDB = true;
+            apiFunction = getMoviesByGenre;
+            apiParams = { genreId, language: AppState.searchLanguage, page: AppState.currentPage };
         }
     } else if (!query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
-        // Si no hay búsqueda ni filtro, mostrar populares de TMDB
-        moviesToRender = await getPopularTMDB(AppState.searchLanguage);
-    } else {
-        // Fallback a base de datos local
-        moviesToRender = AppState.movies;
+        useTMDB = true;
+        apiFunction = getPopularTMDB;
+        apiParams = { language: AppState.searchLanguage, page: AppState.currentPage };
     }
+
+    AppState.currentMode = useTMDB ? 'tmdb' : 'local';
+
+    if (useTMDB && apiFunction) {
+        // Cargar siempre, incluso si no hay más páginas en estado inicial
+        if ((AppState.hasMorePages || !loadMore) && !AppState.isLoadingMore) {
+            AppState.isLoadingMore = true;
+            
+            const result = await apiFunction(...Object.values(apiParams));
+            
+            if (loadMore) {
+                AppState.tmdbMovies.push(...result.movies);
+            } else {
+                AppState.tmdbMovies = result.movies;
+            }
+            
+            AppState.totalPages = result.totalPages;
+            AppState.currentPage++;
+            AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
+            AppState.isLoadingMore = false;
+        }
+    } else {
+        // Base de datos local
+        if (!loadMore) {
+            AppState.tmdbMovies = AppState.movies;
+        }
+    }
+
+    let moviesToRender = AppState.tmdbMovies;
 
     let filtered = moviesToRender.filter(m => {
         const matchesSearch = query === '' ||
@@ -428,14 +477,18 @@ async function renderMovies() {
     });
 
     if (!DOM.grid) return;
-    DOM.grid.innerHTML = '';
+    
+    // Solo limpiar si no es carga incremental
+    if (!loadMore) {
+        DOM.grid.innerHTML = '';
+    }
 
     // Update total counter
     if (DOM.totalCount) {
-        DOM.totalCount.textContent = filtered.length;
+        DOM.totalCount.textContent = AppState.tmdbMovies.length;
     }
 
-    if (filtered.length === 0) {
+    if (filtered.length === 0 && !loadMore) {
         if (DOM.emptyState) {
             DOM.emptyState.classList.remove('hidden');
             DOM.emptyState.setAttribute('aria-hidden', 'false');
@@ -445,17 +498,23 @@ async function renderMovies() {
             DOM.emptyState.classList.add('hidden');
             DOM.emptyState.setAttribute('aria-hidden', 'true');
         }
+        
+        // Solo renderizar las nuevas películas si es carga incremental
+        const moviesToRenderCards = loadMore ? 
+            filtered.slice(AppState.tmdbMovies.length - filtered.length) : filtered;
+        
         const fragment = document.createDocumentFragment();
 
-        filtered.forEach((movie, index) => {
+        moviesToRenderCards.forEach((movie, index) => {
             const card = document.createElement('div');
             card.className = 'movie-card';
             card.dataset.id = movie.id;
             card.setAttribute('role', 'listitem');
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
-            // Stagger animation delay per card (max 1.5s)
-            card.style.animationDelay = `${Math.min(index * 0.04, 1.5)}s`;
+            // Stagger animation delay per card (max 1.5s) - compensar offset en carga incremental
+            const actualIndex = loadMore ? AppState.tmdbMovies.length - moviesToRenderCards.length + index : index;
+            card.style.animationDelay = `${Math.min(actualIndex * 0.04, 1.5)}s`;
 
             const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
             const safeTitle = escapeHtml(movie.title);
@@ -982,4 +1041,16 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // Infinite Scroll para cargar más películas
+    window.addEventListener('scroll', debounce(async () => {
+        if (AppState.currentMode !== 'tmdb' || AppState.isLoadingMore || !AppState.hasMorePages) return;
+        
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.body.offsetHeight - 500; // Cargar 500px antes del final
+        
+        if (scrollPosition >= threshold) {
+            await renderMovies(true); // true = loadMore mode
+        }
+    }, 200));
 }
