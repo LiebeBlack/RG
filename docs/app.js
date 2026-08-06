@@ -693,7 +693,7 @@ function setupEventListeners() {
             AppState.selectedMovies.clear(); 
             renderMovies(); 
             closeModal(DOM.selectionModal);
-            showToast('Selecciones limpiadas', 'info');
+            showToast('Películas deseleccionadas', 'info');
         });
     }
     
