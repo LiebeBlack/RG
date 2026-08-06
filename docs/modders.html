@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="theme-color" content="#f5f0e8">
+    <meta name="theme-color" content="#1a1a1a">
     <title>Ky! Movies — Administración del Catálogo</title>
     <!-- Favicon SVG inline -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -42,55 +42,53 @@
                     <h1 class="gradient-text">Ky! Movies</h1>
                     <span class="admin-badge">Admin</span>
                 </div>
-                <span class="logo-subtitle">Panel de administración</span>
             </div>
-            
+
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="search-input" placeholder="Buscar película..." autocomplete="off" aria-label="Buscar películas">
+                <input type="search" id="search-input" placeholder="Buscar..." autocomplete="off" aria-label="Buscar películas">
+            </div>
+
+            <div class="filter-inline">
+                <select id="category-filter" class="filter-select-compact" aria-label="Filtrar por categoría">
+                    <option value="all">Todas</option>
+                    <option value="Acción">Acción</option>
+                    <option value="Comedia">Comedia</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Terror">Terror</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="Animación">Animación</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                <select id="sort-filter" class="filter-select-compact" aria-label="Ordenar por">
+                    <option value="recent">Recientes</option>
+                    <option value="az">A-Z</option>
+                    <option value="za">Z-A</option>
+                </select>
             </div>
 
             <div class="actions">
-                <a href="./index.html" class="btn btn-secondary" title="Volver al Modo Usuario" aria-label="Volver al modo usuario">
-                    <i class="fa-solid fa-house" aria-hidden="true"></i> <span class="hide-mobile">Volver</span>
+                <a href="./index.html" class="btn btn-secondary btn-compact" title="Volver" aria-label="Volver al modo usuario">
+                    <i class="fa-solid fa-house" aria-hidden="true"></i>
                 </a>
-                <button id="btn-add-modal" class="btn btn-secondary" title="Añadir Película Manualmente" aria-label="Añadir película manualmente">
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i> <span class="hide-mobile">Manual</span>
+                <button id="btn-add-modal" class="btn btn-secondary btn-compact" title="Añadir" aria-label="Añadir película manualmente">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
                 </button>
-                <label class="btn btn-primary cursor-pointer" title="Registrar Imágenes Múltiples" tabindex="0" role="button" aria-label="Subir archivos de carátulas">
-                    <i class="fa-solid fa-upload" aria-hidden="true"></i> <span class="hide-mobile">Subir archivos</span>
+                <label class="btn btn-primary btn-compact cursor-pointer" title="Subir" tabindex="0" role="button" aria-label="Subir archivos de carátulas">
+                    <i class="fa-solid fa-upload" aria-hidden="true"></i>
                     <input type="file" id="file-upload" multiple accept="image/*" class="hidden-input" aria-hidden="true">
                 </label>
                 <div class="dropdown">
-                    <button class="btn btn-icon" title="Opciones de Base de Datos" aria-haspopup="true" aria-expanded="false" aria-label="Menú de opciones de base de datos">
+                    <button class="btn btn-icon btn-compact" title="Opciones" aria-haspopup="true" aria-expanded="false" aria-label="Menú de opciones">
                         <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
                     </button>
                     <div class="dropdown-content" role="menu">
-                        <button id="btn-export-db" role="menuitem"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Exportar base de datos</button>
+                        <button id="btn-export-db" role="menuitem"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Exportar</button>
                         <div class="dropdown-divider" role="separator"></div>
-                        <button id="btn-clear-db" class="text-danger" role="menuitem"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Borrar todo</button>
+                        <button id="btn-clear-db" class="text-danger" role="menuitem"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Borrar</button>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Filtros -->
-        <div class="filters-container" role="search" aria-label="Filtros del catálogo">
-            <select id="category-filter" class="filter-select" aria-label="Filtrar por categoría">
-                <option value="all">Todas las categorías</option>
-                <option value="Acción">Acción</option>
-                <option value="Comedia">Comedia</option>
-                <option value="Drama">Drama</option>
-                <option value="Terror">Terror</option>
-                <option value="Sci-Fi">Ciencia Ficción</option>
-                <option value="Animación">Animación</option>
-                <option value="Otro">Otro</option>
-            </select>
-            <select id="sort-filter" class="filter-select" aria-label="Ordenar por">
-                <option value="recent">Más recientes</option>
-                <option value="az">A-Z</option>
-                <option value="za">Z-A</option>
-            </select>
         </div>
     </header>
 

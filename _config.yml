@@ -1,0 +1,11 @@
+# GitHub Pages Configuration (optional, for Jekyll compatibility)
+# This file is needed because GitHub Pages uses Jekyll by default
+# We set it to skip processing since we have a static site
+
+exclude:
+  - .github/
+  - README.md
+  - .gitignore
+
+sass:
+  style: compressed
