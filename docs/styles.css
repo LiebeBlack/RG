@@ -16,7 +16,6 @@
 
     --success: #8aad6b;
     --danger: #d47676;
-    --whatsapp: #6ab86a;
 
     /* Intelligent Fluid Layout & Typography - 9% menos compacto */
     --nav-height: clamp(35px, 3.5vh + 17.5px, 52.5px);
@@ -175,16 +174,6 @@ a:hover { color: var(--accent-hover); }
     padding: 9.2px; font-size: clamp(1.1rem, 1.38vw, 1.29rem); border-radius: 50%;
 }
 .btn-icon:hover { color: var(--text-main); background: rgba(255,255,255,0.1); }
-
-.btn-whatsapp {
-    background: linear-gradient(135deg, var(--whatsapp), #5a9e5a);
-    color: #fff;
-    box-shadow: 0 4px 15px rgba(106, 184, 106, 0.25);
-}
-.btn-whatsapp:hover {
-    box-shadow: 0 6px 20px rgba(106, 184, 106, 0.4);
-    transform: translateY(-2px);
-}
 
 
 
@@ -431,6 +420,14 @@ a:hover { color: var(--accent-hover); }
     line-height: 1.15;
     color: #ffffff;
     letter-spacing: -0.02em;
+}
+.card-original-title {
+    font-size: clamp(0.65rem, 0.7vw + 0.4rem, 0.75rem);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    margin-top: 2px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    font-style: italic;
 }
 .card-category {
     font-size: var(--font-small); color: var(--accent); margin-top: 5px;

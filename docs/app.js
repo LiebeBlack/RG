@@ -1,18 +1,25 @@
 /**
- * CineBox - Visor Estático (Vanilla JS ES6+)
- * Arquitectura basada en repositorio (GitHub Pages). 
+ * CineBox - Visor Estático con API TMDB (Vanilla JS ES6+)
+ * Arquitectura basada en repositorio (GitHub Pages).
  * Soporta dos modos: Vista de Usuario (index.html) y Administración (modders.html).
+ * Integración con TMDB API para base de datos completa de películas.
  */
 
-// NOTA: Reemplaza este número por el que prefieras usar para enviar los mensajes por WhatsApp
-const WHATSAPP_NUMBER = "1234567890"; // <- Modifica esto
+
+
+// TMDB API Configuration
+const TMDB_API_KEY = "b00622de54cd7522d4640d5e5c527936";
+const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 // Estado global de la aplicación
 const AppState = {
     movies: [],
     selectedMovies: new Set(),
     isLoading: true,
-    defaultPlaceholder: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMjAwIDMwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZjIyMzEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM0ZjU1NmUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNpbiBQb3J0YWRhPC90ZXh0Pjwvc3ZnPg==",
+    searchLanguage: 'es', // 'es' para español, 'en' para inglés
+    tmdbMovies: [], // Caché de películas de TMDB
+    defaultPlaceholder: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgMjAwIDMwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxZTFhMWEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiNmZmZmZmYiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNpbiBQb3J0YWRhPC90ZXh0Pjwvc3ZnPg==",
     objectUrls: new Set() // Track object URLs for cleanup
 };
 
@@ -26,6 +33,163 @@ function debounce(fn, delay = 250) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
+}
+
+/**
+ * TMDB API Functions
+ */
+
+// Buscar películas en TMDB
+async function searchTMDB(query, language = 'es') {
+    if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
+        console.warn("TMDB API key no configurada. Usando base de datos local.");
+        return [];
+    }
+
+    try {
+        const response = await fetch(
+            `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=${language}&include_adult=false`
+        );
+        const data = await response.json();
+
+        if (data.results) {
+            return data.results.map(movie => ({
+                id: movie.id,
+                tmdbId: movie.id,
+                title: movie.title,
+                originalTitle: movie.original_title,
+                overview: movie.overview,
+                releaseDate: movie.release_date,
+                posterPath: movie.poster_path,
+                backdropPath: movie.backdrop_path,
+                voteAverage: movie.vote_average,
+                genreIds: movie.genre_ids,
+                category: getGenreFromIds(movie.genre_ids),
+                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                fromTMDB: true
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error buscando en TMDB:', error);
+        return [];
+    }
+}
+
+// Obtener películas populares de TMDB
+async function getPopularTMDB(language = 'es', page = 1) {
+    if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
+        console.warn("TMDB API key no configurada. Usando base de datos local.");
+        return [];
+    }
+
+    try {
+        const response = await fetch(
+            `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=${language}&page=${page}`
+        );
+        const data = await response.json();
+
+        if (data.results) {
+            return data.results.map(movie => ({
+                id: movie.id,
+                tmdbId: movie.id,
+                title: movie.title,
+                originalTitle: movie.original_title,
+                overview: movie.overview,
+                releaseDate: movie.release_date,
+                posterPath: movie.poster_path,
+                backdropPath: movie.backdrop_path,
+                voteAverage: movie.vote_average,
+                genreIds: movie.genre_ids,
+                category: getGenreFromIds(movie.genre_ids),
+                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                fromTMDB: true
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error obteniendo populares de TMDB:', error);
+        return [];
+    }
+}
+
+// Obtener películas por género
+async function getMoviesByGenre(genreId, language = 'es', page = 1) {
+    if (!TMDB_API_KEY || TMDB_API_KEY === "TU_API_KEY_AQUI") {
+        console.warn("TMDB API key no configurada. Usando base de datos local.");
+        return [];
+    }
+
+    try {
+        const response = await fetch(
+            `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&language=${language}&page=${page}`
+        );
+        const data = await response.json();
+
+        if (data.results) {
+            return data.results.map(movie => ({
+                id: movie.id,
+                tmdbId: movie.id,
+                title: movie.title,
+                originalTitle: movie.original_title,
+                overview: movie.overview,
+                releaseDate: movie.release_date,
+                posterPath: movie.poster_path,
+                backdropPath: movie.backdrop_path,
+                voteAverage: movie.vote_average,
+                genreIds: movie.genre_ids,
+                category: getGenreFromIds(movie.genre_ids),
+                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                fromTMDB: true
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error obteniendo películas por género:', error);
+        return [];
+    }
+}
+
+// Mapeo de IDs de género a nombres
+const GENRE_MAP = {
+    28: 'Acción',
+    12: 'Aventura',
+    16: 'Animación',
+    35: 'Comedia',
+    80: 'Crimen',
+    99: 'Documental',
+    18: 'Drama',
+    10751: 'Familia',
+    14: 'Fantasía',
+    36: 'Historia',
+    27: 'Terror',
+    10402: 'Música',
+    9648: 'Misterio',
+    10749: 'Romance',
+    878: 'Sci-Fi',
+    10770: 'TV Movie',
+    53: 'Thriller',
+    10752: 'Bélico',
+    37: 'Western'
+};
+
+function getGenreFromIds(genreIds) {
+    if (!genreIds || genreIds.length === 0) return 'Otro';
+    const genreId = genreIds[0];
+    return GENRE_MAP[genreId] || 'Otro';
+}
+
+// Mapeo inverso de nombres a IDs
+function getGenreIdFromName(genreName) {
+    for (const [id, name] of Object.entries(GENRE_MAP)) {
+        if (name.toLowerCase() === genreName.toLowerCase()) {
+            return parseInt(id);
+        }
+    }
+    return null;
 }
 
 // Sanitize text for XSS prevention
@@ -42,6 +206,7 @@ const DOM = {
     searchInput: document.getElementById('search-input'),
     categoryFilter: document.getElementById('category-filter'),
     sortFilter: document.getElementById('sort-filter'),
+    languageFilter: document.getElementById('language-filter'),
     totalCount: document.getElementById('total-count-number'),
     
     fileUpload: document.getElementById('file-upload'),
@@ -57,7 +222,6 @@ const DOM = {
     cartCount: document.getElementById('cart-count'),
     btnViewList: document.getElementById('btn-view-list'),
     btnCopyList: document.getElementById('btn-copy-list'),
-    btnWhatsapp: document.getElementById('btn-whatsapp'),
     
     selectionModal: document.getElementById('selection-modal'),
     closeSelectionModalBtn: document.querySelector('.close-selection-modal'),
@@ -218,23 +382,52 @@ function cleanupObjectUrls() {
 /**
  * Motor de Renderizado (Grid Principal)
  * Usa View Transitions API si está disponible para transiciones suaves.
+ * Integra TMDB API cuando está configurada.
  */
-function renderMovies() {
-    const doRender = () => {
-        const query = DOM.searchInput ? DOM.searchInput.value.toLowerCase().trim() : '';
+async async function renderMovies() {
+    const doRender = async () => {
+        const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
         const category = DOM.categoryFilter ? DOM.categoryFilter.value : 'all';
         const sort = DOM.sortFilter ? DOM.sortFilter.value : 'recent';
 
-        let filtered = AppState.movies.filter(m => {
-            const matchesSearch = m.title.toLowerCase().includes(query) || 
-                                  (m.category && m.category.toLowerCase().includes(query));
+        let moviesToRender = [];
+
+        // Si hay búsqueda y TMDB está configurado, usar API
+        if (query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+            const tmdbResults = await searchTMDB(query, AppState.searchLanguage);
+            moviesToRender = tmdbResults;
+        } else if (category !== 'all' && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+            // Si hay filtro de categoría y TMDB está configurado
+            const genreId = getGenreIdFromName(category);
+            if (genreId) {
+                moviesToRender = await getMoviesByGenre(genreId, AppState.searchLanguage);
+            } else {
+                moviesToRender = AppState.movies;
+            }
+        } else if (!query && TMDB_API_KEY && TMDB_API_KEY !== "TU_API_KEY_AQUI") {
+            // Si no hay búsqueda ni filtro, mostrar populares de TMDB
+            moviesToRender = await getPopularTMDB(AppState.searchLanguage);
+        } else {
+            // Fallback a base de datos local
+            moviesToRender = AppState.movies;
+        }
+
+        let filtered = moviesToRender.filter(m => {
+            const matchesSearch = query === '' ||
+                                  m.title.toLowerCase().includes(query.toLowerCase()) ||
+                                  (m.originalTitle && m.originalTitle.toLowerCase().includes(query.toLowerCase()));
             const matchesCategory = category === 'all' || m.category === category;
             return matchesSearch && matchesCategory;
         });
 
         if (sort === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title, 'es'));
         else if (sort === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title, 'es'));
-        else filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        else filtered.sort((a, b) => {
+            // Usar releaseDate para TMDB, timestamp para local
+            const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : (a.timestamp || 0);
+            const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : (b.timestamp || 0);
+            return dateB - dateA;
+        });
 
         if (!DOM.grid) return;
         DOM.grid.innerHTML = '';
@@ -268,12 +461,18 @@ function renderMovies() {
                 
                 const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
                 const safeTitle = escapeHtml(movie.title);
+                const safeOriginalTitle = movie.originalTitle && movie.originalTitle !== movie.title ? escapeHtml(movie.originalTitle) : '';
                 const safeCategory = escapeHtml(movie.category || 'Otro');
-                
+
                 let editBadgeHTML = '';
                 if (isAdmin) {
                     editBadgeHTML = `<div class="edit-badge" title="Editar detalles" role="button" tabindex="0" aria-label="Editar ${safeTitle}"><i class="fa-solid fa-pen" aria-hidden="true"></i></div>`;
                 }
+
+                // Mostrar título original si es diferente al título en el idioma actual
+                const titleHTML = safeOriginalTitle ?
+                    `<h3 class="card-title">${safeTitle}</h3><p class="card-original-title">${safeOriginalTitle}</p>` :
+                    `<h3 class="card-title">${safeTitle}</h3>`;
 
                 card.innerHTML = `
                     <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
@@ -282,7 +481,7 @@ function renderMovies() {
                         <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${AppState.defaultPlaceholder}'">
                     </div>
                     <div class="card-overlay">
-                        <h3 class="card-title">${safeTitle}</h3>
+                        ${titleHTML}
                         <p class="card-category">${safeCategory}</p>
                     </div>
                 `;
@@ -410,7 +609,7 @@ function updateCartUI() {
 
 function getSelectedMoviesText() {
     const selectedList = AppState.movies.filter(m => AppState.selectedMovies.has(m.id));
-    let text = `🎬 *MI PEDIDO DE PELÍCULAS* (Total: ${selectedList.length})\n\n`;
+    let text = '';
     selectedList.forEach((movie, index) => text += `${index + 1}. ${movie.title}\n`);
     return text;
 }
@@ -535,6 +734,12 @@ function setupEventListeners() {
     if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedRender);
     if (DOM.categoryFilter) DOM.categoryFilter.addEventListener('change', renderMovies);
     if (DOM.sortFilter) DOM.sortFilter.addEventListener('change', renderMovies);
+    if (DOM.languageFilter) {
+        DOM.languageFilter.addEventListener('change', (e) => {
+            AppState.searchLanguage = e.target.value;
+            renderMovies();
+        });
+    }
 
     // ═══════════════════════════════════════════
     // SOLO ADMIN: Archivos y Drag & Drop
@@ -746,20 +951,6 @@ function setupEventListeners() {
                     showToast('Error al copiar al portapapeles', 'error');
                 }
             }
-        });
-    }
-    
-    if (DOM.btnWhatsapp) {
-        DOM.btnWhatsapp.addEventListener('click', () => {
-            if (AppState.selectedMovies.size === 0) {
-                showToast('Selecciona películas primero', 'info');
-                return;
-            }
-            const text = encodeURIComponent(getSelectedMoviesText());
-            const url = WHATSAPP_NUMBER 
-                ? `https://wa.me/${WHATSAPP_NUMBER}?text=${text}` 
-                : `https://wa.me/?text=${text}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
         });
     }
 
