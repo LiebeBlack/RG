@@ -22,8 +22,8 @@
     <div id="drop-zone-overlay" class="drop-overlay hidden" role="dialog" aria-label="Zona de arrastrar archivos">
         <div class="drop-content">
             <i class="fa-solid fa-cloud-arrow-up fa-4x" aria-hidden="true"></i>
-            <h2>Registrar nuevas carátulas</h2>
-            <p>Suelta aquí para organizar en tu base de datos estática</p>
+            <h2>Agregar nuevas carátulas</h2>
+            <p>Suelta aquí para guardar en tu base de datos</p>
         </div>
     </div>
     
@@ -44,7 +44,7 @@
             
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="search-input" placeholder="Buscar título, género..." autocomplete="off" aria-label="Buscar películas">
+                <input type="search" id="search-input" placeholder="Buscar película..." autocomplete="off" aria-label="Buscar películas">
             </div>
 
             <div class="actions">
@@ -55,7 +55,7 @@
                     <i class="fa-solid fa-plus" aria-hidden="true"></i> <span class="hide-mobile">Manual</span>
                 </button>
                 <label class="btn btn-primary cursor-pointer" title="Registrar Imágenes Múltiples" tabindex="0" role="button" aria-label="Subir archivos de carátulas">
-                    <i class="fa-solid fa-upload" aria-hidden="true"></i> <span class="hide-mobile">Subir Archivos</span>
+                    <i class="fa-solid fa-upload" aria-hidden="true"></i> <span class="hide-mobile">Subir archivos</span>
                     <input type="file" id="file-upload" multiple accept="image/*" class="hidden-input" aria-hidden="true">
                 </label>
                 <div class="dropdown">
@@ -63,9 +63,9 @@
                         <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
                     </button>
                     <div class="dropdown-content" role="menu">
-                        <button id="btn-export-db" role="menuitem"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Exportar BD (JSON)</button>
+                        <button id="btn-export-db" role="menuitem"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Exportar base de datos</button>
                         <div class="dropdown-divider" role="separator"></div>
-                        <button id="btn-clear-db" class="text-danger" role="menuitem"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Vaciar BD Local</button>
+                        <button id="btn-clear-db" class="text-danger" role="menuitem"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Borrar todo</button>
                     </div>
                 </div>
             </div>
@@ -74,19 +74,19 @@
         <!-- Filtros -->
         <div class="filters-container" role="search" aria-label="Filtros del catálogo">
             <select id="category-filter" class="filter-select" aria-label="Filtrar por categoría">
-                <option value="all">🌐 Todas las Categorías</option>
-                <option value="Acción">⚔️ Acción</option>
-                <option value="Comedia">😂 Comedia</option>
-                <option value="Drama">🎭 Drama</option>
-                <option value="Terror">👻 Terror</option>
-                <option value="Sci-Fi">🚀 Ciencia Ficción</option>
-                <option value="Animación">🎨 Animación</option>
-                <option value="Otro">🎬 Otro</option>
+                <option value="all">Todas las categorías</option>
+                <option value="Acción">Acción</option>
+                <option value="Comedia">Comedia</option>
+                <option value="Drama">Drama</option>
+                <option value="Terror">Terror</option>
+                <option value="Sci-Fi">Ciencia ficción</option>
+                <option value="Animación">Animación</option>
+                <option value="Otro">Otro</option>
             </select>
             <select id="sort-filter" class="filter-select" aria-label="Ordenar por">
-                <option value="recent">⏱️ Más recientes</option>
-                <option value="az">🔤 A-Z</option>
-                <option value="za">🔡 Z-A</option>
+                <option value="recent">Más recientes</option>
+                <option value="az">A-Z</option>
+                <option value="za">Z-A</option>
             </select>
         </div>
     </header>
@@ -97,8 +97,8 @@
             <div class="empty-icon-wrapper">
                 <i class="fa-solid fa-photo-film fa-4x" aria-hidden="true"></i>
             </div>
-            <h2>Tu Universo Cinematográfico está Vacío</h2>
-            <p>Arrastra tus carátulas espectaculares a esta pantalla para darles vida.<br>Una vez registradas, exporta tu <b>catalogo.json</b> para el mundo.</p>
+            <h2>No hay películas todavía</h2>
+            <p>Arrastra tus carátulas aquí para agregarlas.<br>Cuando termines, exporta tu <b>catalogo.json</b> para usarlo.</p>
         </div>
         
         <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
