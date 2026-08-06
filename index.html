@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CineBox — Explora y selecciona tu catálogo de películas premium. Busca, filtra y comparte tus títulos favoritos por WhatsApp.">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="CineBox — Catálogo de Películas Premium">
+    <meta property="og:description" content="Explora, selecciona y comparte tu catálogo de películas. Interfaz cinematográfica con búsqueda, filtros y envío por WhatsApp.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#07090f">
+    <title>CineBox — Catálogo de Películas</title>
+    <!-- Favicon SVG inline -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" role="status" aria-label="Cargando">
+        <div class="spinner"></div>
+        <p id="loading-text">Cargando catálogo...</p>
+    </div>
+
+    <!-- Barra de Navegación -->
+    <header class="glass-nav" role="banner">
+        <div class="nav-container">
+            <a href="./index.html" class="logo" aria-label="CineBox - Inicio">
+                <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
+                <h1 class="gradient-text">CineBox</h1>
+            </a>
+            
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" id="search-input" placeholder="Buscar título, género..." autocomplete="off" aria-label="Buscar películas">
+            </div>
+
+            <div class="nav-stats" id="nav-stats" aria-live="polite">
+                <span id="total-count" class="stat-pill">
+                    <i class="fa-solid fa-film" aria-hidden="true"></i>
+                    <span id="total-count-number">0</span>
+                </span>
+            </div>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="filters-container" role="search" aria-label="Filtros del catálogo">
+            <select id="category-filter" class="filter-select" aria-label="Filtrar por categoría">
+                <option value="all">🌐 Todas las Categorías</option>
+                <option value="Acción">⚔️ Acción</option>
+                <option value="Comedia">😂 Comedia</option>
+                <option value="Drama">🎭 Drama</option>
+                <option value="Terror">👻 Terror</option>
+                <option value="Sci-Fi">🚀 Ciencia Ficción</option>
+                <option value="Animación">🎨 Animación</option>
+                <option value="Otro">🎬 Otro</option>
+            </select>
+            <select id="sort-filter" class="filter-select" aria-label="Ordenar por">
+                <option value="recent">⏱️ Más recientes</option>
+                <option value="az">🔤 A-Z</option>
+                <option value="za">🔡 Z-A</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container" role="main">
+        <div id="empty-state" class="empty-state hidden" aria-hidden="true">
+            <div class="empty-icon-wrapper">
+                <i class="fa-solid fa-photo-film fa-4x" aria-hidden="true"></i>
+            </div>
+            <h2>No hay películas aún</h2>
+            <p>El catálogo estará disponible pronto.<br>¡Vuelve pronto para explorar los títulos!</p>
+        </div>
+        
+        <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
+            <!-- Las tarjetas de películas se generarán aquí con JS -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer role="contentinfo">
+        <div class="container">
+            <p>CineBox &copy; 2026. Catálogo interactivo premium.</p>
+            <a href="./modders.html" class="admin-link" aria-label="Panel de administración">[Admin]</a>
+        </div>
+    </footer>
+
+    <!-- Carrito Flotante (Dock) -->
+    <div id="floating-cart" class="floating-cart hide-dock" role="complementary" aria-label="Selecciones de películas">
+        <div class="cart-info cursor-pointer" id="btn-view-list" title="Revisar lista seleccionada" tabindex="0" role="button" aria-label="Ver lista de películas seleccionadas">
+            <div class="cart-badge"><span id="cart-count">0</span></div>
+            <span class="cart-label">Tus Selecciones</span>
+            <i class="fa-solid fa-chevron-up toggle-icon" aria-hidden="true"></i>
+        </div>
+        <div class="cart-separator" aria-hidden="true"></div>
+        <div class="cart-actions">
+            <button id="btn-copy-list" class="btn btn-secondary" title="Copiar lista al portapapeles" aria-label="Copiar lista al portapapeles">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i> <span>Copiar</span>
+            </button>
+            <button id="btn-whatsapp" class="btn btn-whatsapp" title="Enviar lista por WhatsApp" aria-label="Enviar lista por WhatsApp">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> <span>Compartir</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Lista Seleccionada -->
+    <div id="selection-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="selection-modal-title">
+        <div class="modal-content glass-panel modal-lg">
+            <div class="modal-header">
+                <h2 id="selection-modal-title">Lista de Selección (<span id="modal-cart-count">0</span>)</h2>
+                <button class="close-selection-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <ul id="selected-movies-list" class="selected-list" role="list">
+                    <!-- Lista de peliculas renderizadas por JS -->
+                </ul>
+                <div class="modal-footer">
+                    <button id="btn-deselect-all-modal" class="btn btn-ghost w-100">Limpiar Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+    <script src="./app.js"></script>
+</body>
+</html>

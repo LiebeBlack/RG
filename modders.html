@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#07090f">
+    <title>CineBox — Administración del Catálogo</title>
+    <!-- Favicon SVG inline -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+    <!-- Drag & Drop Overlay -->
+    <div id="drop-zone-overlay" class="drop-overlay hidden" role="dialog" aria-label="Zona de arrastrar archivos">
+        <div class="drop-content">
+            <i class="fa-solid fa-cloud-arrow-up fa-4x" aria-hidden="true"></i>
+            <h2>Registrar nuevas carátulas</h2>
+            <p>Suelta aquí para organizar en tu base de datos estática</p>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-label="Cargando">
+        <div class="spinner"></div>
+        <p id="loading-text">Sincronizando catálogo...</p>
+    </div>
+
+    <!-- Barra de Navegación -->
+    <header class="glass-nav" role="banner">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
+                <h1 class="gradient-text">CineBox</h1>
+                <span class="admin-badge">Admin</span>
+            </div>
+            
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" id="search-input" placeholder="Buscar título, género..." autocomplete="off" aria-label="Buscar películas">
+            </div>
+
+            <div class="actions">
+                <a href="./index.html" class="btn btn-secondary" title="Volver al Modo Usuario" aria-label="Volver al modo usuario">
+                    <i class="fa-solid fa-house" aria-hidden="true"></i> <span class="hide-mobile">Volver</span>
+                </a>
+                <button id="btn-add-modal" class="btn btn-secondary" title="Añadir Película Manualmente" aria-label="Añadir película manualmente">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> <span class="hide-mobile">Manual</span>
+                </button>
+                <label class="btn btn-primary cursor-pointer" title="Registrar Imágenes Múltiples" tabindex="0" role="button" aria-label="Subir archivos de carátulas">
+                    <i class="fa-solid fa-upload" aria-hidden="true"></i> <span class="hide-mobile">Subir Archivos</span>
+                    <input type="file" id="file-upload" multiple accept="image/*" class="hidden-input" aria-hidden="true">
+                </label>
+                <div class="dropdown">
+                    <button class="btn btn-icon" title="Opciones de Base de Datos" aria-haspopup="true" aria-expanded="false" aria-label="Menú de opciones de base de datos">
+                        <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-content" role="menu">
+                        <button id="btn-export-db" role="menuitem"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> Exportar BD (JSON)</button>
+                        <div class="dropdown-divider" role="separator"></div>
+                        <button id="btn-clear-db" class="text-danger" role="menuitem"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Vaciar BD Local</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="filters-container" role="search" aria-label="Filtros del catálogo">
+            <select id="category-filter" class="filter-select" aria-label="Filtrar por categoría">
+                <option value="all">🌐 Todas las Categorías</option>
+                <option value="Acción">⚔️ Acción</option>
+                <option value="Comedia">😂 Comedia</option>
+                <option value="Drama">🎭 Drama</option>
+                <option value="Terror">👻 Terror</option>
+                <option value="Sci-Fi">🚀 Ciencia Ficción</option>
+                <option value="Animación">🎨 Animación</option>
+                <option value="Otro">🎬 Otro</option>
+            </select>
+            <select id="sort-filter" class="filter-select" aria-label="Ordenar por">
+                <option value="recent">⏱️ Más recientes</option>
+                <option value="az">🔤 A-Z</option>
+                <option value="za">🔡 Z-A</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container" role="main">
+        <div id="empty-state" class="empty-state hidden" aria-hidden="true">
+            <div class="empty-icon-wrapper">
+                <i class="fa-solid fa-photo-film fa-4x" aria-hidden="true"></i>
+            </div>
+            <h2>Tu Universo Cinematográfico está Vacío</h2>
+            <p>Arrastra tus carátulas espectaculares a esta pantalla para darles vida.<br>Una vez registradas, exporta tu <b>catalogo.json</b> para el mundo.</p>
+        </div>
+        
+        <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
+            <!-- Las tarjetas de películas se generarán aquí con JS -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer role="contentinfo">
+        <div class="container">
+            <p>CineBox &copy; 2026. Interfaz estática premium diseñada para repositorios.</p>
+        </div>
+    </footer>
+
+    <!-- Carrito Flotante (Dock) -->
+    <div id="floating-cart" class="floating-cart hide-dock" role="complementary" aria-label="Selecciones de películas">
+        <div class="cart-info cursor-pointer" id="btn-view-list" title="Revisar lista seleccionada" tabindex="0" role="button" aria-label="Ver lista de películas seleccionadas">
+            <div class="cart-badge"><span id="cart-count">0</span></div>
+            <span class="cart-label">Tus Selecciones</span>
+            <i class="fa-solid fa-chevron-up toggle-icon" aria-hidden="true"></i>
+        </div>
+        <div class="cart-separator" aria-hidden="true"></div>
+        <div class="cart-actions">
+            <button id="btn-copy-list" class="btn btn-secondary" title="Copiar lista al portapapeles" aria-label="Copiar lista al portapapeles">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i> <span>Copiar</span>
+            </button>
+            <button id="btn-whatsapp" class="btn btn-whatsapp" title="Enviar lista por WhatsApp" aria-label="Enviar lista por WhatsApp">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> <span>Compartir</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Lista Seleccionada -->
+    <div id="selection-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="selection-modal-title-admin">
+        <div class="modal-content glass-panel modal-lg">
+            <div class="modal-header">
+                <h2 id="selection-modal-title-admin">Lista de Selección (<span id="modal-cart-count">0</span>)</h2>
+                <button class="close-selection-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <ul id="selected-movies-list" class="selected-list" role="list">
+                    <!-- Lista de peliculas renderizadas por JS -->
+                </ul>
+                <div class="modal-footer">
+                    <button id="btn-deselect-all-modal" class="btn btn-ghost w-100">Limpiar Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Añadir Manualmente -->
+    <div id="add-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="add-modal-title">Registro Manual</h2>
+                <button class="close-add-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-movie-form" novalidate>
+                    <div class="form-group">
+                        <label for="movie-title">Título <span class="text-danger">*</span></label>
+                        <input type="text" id="movie-title" required placeholder="Ej: Matrix Reloaded" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-url">URL de la Portada <span class="text-danger">*</span></label>
+                        <input type="text" id="movie-url" required placeholder="./caratulas/matrix.jpg" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="movie-category">Categoría Principal</label>
+                        <select id="movie-category">
+                            <option value="Acción">Acción</option>
+                            <option value="Comedia">Comedia</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Sci-Fi">Ciencia Ficción</option>
+                            <option value="Animación">Animación</option>
+                            <option value="Otro" selected>Otro</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Agregar al Catálogo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar/Eliminar Película -->
+    <div id="edit-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="edit-modal-title">Editar Película</h2>
+                <button class="close-edit-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-movie-form" novalidate>
+                    <input type="hidden" id="edit-movie-id">
+                    <div class="form-group">
+                        <label for="edit-movie-title">Título <span class="text-danger">*</span></label>
+                        <input type="text" id="edit-movie-title" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-movie-url">URL de la Portada <span class="text-danger">*</span></label>
+                        <input type="text" id="edit-movie-url" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-movie-category">Categoría Principal</label>
+                        <select id="edit-movie-category">
+                            <option value="Acción">Acción</option>
+                            <option value="Comedia">Comedia</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Sci-Fi">Ciencia Ficción</option>
+                            <option value="Animación">Animación</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="edit-actions mt-2">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">Guardar Cambios</button>
+                        <button type="button" id="btn-delete-movie" class="btn btn-secondary text-danger" title="Eliminar película del catálogo" aria-label="Eliminar esta película">
+                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+    <script src="./app.js"></script>
+</body>
+</html>
