@@ -5,8 +5,6 @@
  * Integración con TMDB API para base de datos completa de películas.
  */
 
-
-
 // TMDB API Configuration
 const TMDB_API_KEY = "b00622de54cd7522d4640d5e5c527936";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
@@ -42,6 +40,22 @@ function debounce(fn, delay = 250) {
 /**
  * TMDB API Functions
  */
+
+// Cargar películas iniciales de TMDB
+async function loadTMDBMovies() {
+    try {
+        const result = await getPopularTMDB(AppState.searchLanguage, 1);
+        if (result.movies && result.movies.length > 0) {
+            AppState.tmdbMovies = result.movies;
+            AppState.totalPages = result.totalPages;
+            AppState.currentPage = 2;
+            AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
+        }
+    } catch (error) {
+        console.error('Error cargando películas de TMDB:', error);
+        throw error;
+    }
+}
 
 // Buscar películas en TMDB (carga incremental)
 async function searchTMDB(query, language = 'es', page = 1) {
@@ -215,6 +229,7 @@ const DOM = {
     languageFilter: document.getElementById('language-filter'),
     totalCount: document.getElementById('total-count-number'),
     loadingOverlay: document.getElementById('loading-overlay'),
+    loadingText: document.getElementById('loading-text'),
     
     cart: document.getElementById('floating-cart'),
     cartCount: document.getElementById('cart-count'),
@@ -234,20 +249,35 @@ const DOM = {
  * Inicialización
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('=== Iniciando aplicación ===');
-    console.log('Estado inicial:', AppState);
-    
     showLoading(true);
+    
     try {
         setupEventListeners();
+        
+        // Actualizar texto de loading si existe
+        if (DOM.loadingText) {
+            DOM.loadingText.textContent = 'Cargando películas...';
+        }
+        
+        // Cargar películas iniciales inmediatamente
+        await loadTMDBMovies();
+        
+        // Actualizar texto de loading
+        if (DOM.loadingText) {
+            DOM.loadingText.textContent = 'Listo...';
+        }
+        
+        // Renderizar películas inmediatamente
         await renderMovies();
+        
+        // Ocultar loading instantáneo
+        showLoading(false);
+        
     } catch (error) {
         console.error('Error durante la inicialización:', error);
+        showLoading(false);
         showToast('Error al cargar el catálogo', 'error');
     }
-    showLoading(false);
-    
-    console.log('=== Aplicación iniciada ===');
 });
 
 /**
@@ -278,17 +308,11 @@ async function renderMovies(loadMore = false) {
 
     // Detectar si cambiaron los filtros (resetear estado)
     if (!loadMore && (query !== AppState.currentQuery || category !== AppState.currentCategory)) {
-        console.log('Filtros cambiados - reseteando estado');
-        console.log(`Antes: query="${AppState.currentQuery}", category="${AppState.currentCategory}"`);
-        console.log(`Después: query="${query}", category="${category}"`);
-        
         AppState.currentQuery = query;
         AppState.currentCategory = category;
         AppState.currentPage = 1;
         AppState.tmdbMovies = [];
         AppState.hasMorePages = true;
-        
-        console.log('Estado reseteado correctamente');
     }
 
     // Determinar la función API a usar
@@ -321,31 +345,22 @@ async function renderMovies(loadMore = false) {
             const existingIds = new Set(AppState.tmdbMovies.map(m => m.id));
             const newMovies = result.movies.filter(m => !existingIds.has(m.id));
             
-            console.log(`Películas recibidas: ${result.movies.length}, Películas nuevas: ${newMovies.length}`);
-            console.log(`IDs recibidos: ${result.movies.map(m => m.id).slice(0, 3).join(', ')}...`);
-            console.log(`IDs existentes: ${Array.from(existingIds).slice(0, 3).join(', ')}...`);
-            
             if (newMovies.length > 0) {
                 const previousLength = AppState.tmdbMovies.length;
                 AppState.tmdbMovies.push(...newMovies);
-                newMoviesCount = AppState.tmdbMovies.length - previousLength;
-                console.log(`Añadidas ${newMoviesCount} películas nuevas. Total: ${AppState.tmdbMovies.length}`);
+                newMoviesCount = newMovies.length;
             } else {
-                console.log('No se encontraron películas nuevas en esta página - deteniendo carga');
-                AppState.hasMorePages = false; // No hay más películas únicas
+                AppState.hasMorePages = false;
             }
         } else {
             // Carga inicial: limpiar completamente y asignar nuevas películas
             AppState.tmdbMovies = result.movies;
-            console.log(`Carga inicial: ${result.movies.length} películas. IDs: ${result.movies.map(m => m.id).slice(0, 5).join(', ')}...`);
         }
         
         AppState.totalPages = result.totalPages;
         AppState.currentPage++;
         AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
         AppState.isLoadingMore = false;
-        
-        console.log(`Estado: Página ${AppState.currentPage - 1}/${AppState.totalPages}, Total películas: ${AppState.tmdbMovies.length}, Hay más: ${AppState.hasMorePages}`);
     }
 
     let moviesToRender = AppState.tmdbMovies;
@@ -388,17 +403,14 @@ async function renderMovies(loadMore = false) {
         let moviesToRenderCards;
         if (loadMore && newMoviesCount > 0) {
             // Usar las últimas películas añadidas exactamente como vienen de la API
-            moviesToRenderCards = AppState.tmdbMovies.slice(-newMoviesCount);
-            console.log(`Renderizando solo ${moviesToRenderCards.length} películas nuevas sin reordenar`);
-            console.log(`IDs a renderizar: ${moviesToRenderCards.map(m => m.id).join(', ')}`);
+            const startIndex = AppState.tmdbMovies.length - newMoviesCount;
+            moviesToRenderCards = AppState.tmdbMovies.slice(startIndex);
         } else {
             moviesToRenderCards = moviesToRender;
-            console.log(`Renderizando todas ${moviesToRenderCards.length} películas`);
         }
         
         // Verificar que hay películas para renderizar
         if (!moviesToRenderCards || moviesToRenderCards.length === 0) {
-            console.log('No hay películas para renderizar');
             return;
         }
         
@@ -408,7 +420,11 @@ async function renderMovies(loadMore = false) {
             // Verificar que la película no ya existe en el DOM
             const existingCard = DOM.grid.querySelector(`[data-id="${movie.id}"]`);
             if (existingCard) {
-                console.log(`Card con ID ${movie.id} ya existe en DOM, saltando`);
+                return; // Skip si ya existe
+            }
+            
+            // Verificar que la película tiene ID válido
+            if (!movie.id) {
                 return;
             }
             
@@ -418,9 +434,9 @@ async function renderMovies(loadMore = false) {
             card.setAttribute('role', 'listitem');
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
-            // Stagger animation delay per card (max 1.5s) - compensar offset en carga incremental
+            // Stagger animation delay per card (max 0.8s) - ultra rápido para móvil
             const actualIndex = loadMore ? AppState.tmdbMovies.length - moviesToRenderCards.length + index : index;
-            card.style.animationDelay = `${Math.min(actualIndex * 0.04, 1.5)}s`;
+            card.style.animationDelay = `${Math.min(actualIndex * 0.015, 0.8)}s`;
 
             const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
             const safeTitle = escapeHtml(movie.title);
@@ -435,7 +451,7 @@ async function renderMovies(loadMore = false) {
             card.innerHTML = `
                 <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
                 <div class="card-img-container">
-                    <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${AppState.defaultPlaceholder}'">
+                    <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="eager" decoding="async" style="opacity: 1;">
                 </div>
                 <div class="card-overlay">
                     ${titleHTML}
@@ -443,12 +459,22 @@ async function renderMovies(loadMore = false) {
                 </div>
             `;
 
+            // Manejo instantáneo de carga de imagen
+            const img = card.querySelector('.card-img');
+            if (img) {
+                img.classList.add('loaded');
+                
+                const handleImageError = () => {
+                    img.src = AppState.defaultPlaceholder;
+                };
+                
+                img.onerror = handleImageError;
+            }
+
             // Click para seleccionar/deseleccionar
             card.addEventListener('click', () => {
                 if (card) {
                     toggleSelection(movie.id, card);
-                } else {
-                    console.error('Card element es null para movie:', movie);
                 }
             });
             card.addEventListener('keydown', (e) => {
@@ -456,8 +482,6 @@ async function renderMovies(loadMore = false) {
                     e.preventDefault();
                     if (card) {
                         toggleSelection(movie.id, card);
-                    } else {
-                        console.error('Card element es null para movie:', movie);
                     }
                 }
             });
@@ -466,6 +490,21 @@ async function renderMovies(loadMore = false) {
         });
 
         DOM.grid.appendChild(fragment);
+        
+        // Forzar carga inmediata de imágenes nuevas
+        if (loadMore) {
+            const newImages = Array.from(DOM.grid.querySelectorAll('.card-img')).slice(-newMoviesCount);
+            newImages.forEach(img => {
+                if (img.src && !img.complete) {
+                    // Forzar recarga de la imagen
+                    const currentSrc = img.src;
+                    img.src = '';
+                    setTimeout(() => {
+                        img.src = currentSrc;
+                    }, 10);
+                }
+            });
+        }
     }
 }
 
@@ -519,24 +558,32 @@ function renderSelectedList() {
  * Lógica de Selección y Carrito Flotante con Animaciones (Spring/Pulse)
  */
 function toggleSelection(id, cardElement) {
-    if (!cardElement) {
-        console.error('toggleSelection: cardElement es undefined para id:', id);
-        return;
-    }
-    
-    if (!id) {
-        console.error('toggleSelection: id es undefined');
+    if (!cardElement || !id) {
         return;
     }
     
     try {
-        if (AppState.selectedMovies.has(id)) {
+        const isSelected = AppState.selectedMovies.has(id);
+        
+        // Animación de feedback táctil
+        cardElement.style.transition = 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)';
+        
+        if (isSelected) {
             AppState.selectedMovies.delete(id);
             cardElement.classList.remove('selected');
             const currentLabel = cardElement.getAttribute('aria-label');
             if (currentLabel) {
                 cardElement.setAttribute('aria-label', currentLabel.replace(' (seleccionada)', ''));
             }
+            
+            // Animación de deselección
+            cardElement.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                cardElement.style.transform = '';
+                cardElement.style.transition = '';
+            }, 150);
+            
+            showToast('Película eliminada de la selección', 'info');
         } else {
             AppState.selectedMovies.add(id);
             cardElement.classList.add('selected');
@@ -544,6 +591,15 @@ function toggleSelection(id, cardElement) {
             if (currentLabel) {
                 cardElement.setAttribute('aria-label', currentLabel + ' (seleccionada)');
             }
+            
+            // Animación de selección más pronunciada
+            cardElement.style.transform = 'scale(1.08)';
+            setTimeout(() => {
+                cardElement.style.transform = '';
+                cardElement.style.transition = '';
+            }, 200);
+            
+            showToast('Película añadida a la selección', 'success');
             
             // Animación Pulse en el badge del carrito
             const badge = document.querySelector('.cart-badge');
@@ -792,34 +848,36 @@ function setupEventListeners() {
 
     // Infinite Scroll para cargar más películas
     let scrollTimeout = null;
+    let lastScrollPosition = 0;
+    
     window.addEventListener('scroll', () => {
         if (AppState.isLoadingMore || !AppState.hasMorePages) {
-            console.log('Scroll ignorado:', {
-                isLoadingMore: AppState.isLoadingMore,
-                hasMorePages: AppState.hasMorePages
-            });
             return;
         }
+        
+        const currentScrollPosition = window.scrollY;
+        
+        // Solo procesar si estamos haciendo scroll hacia abajo
+        if (currentScrollPosition <= lastScrollPosition) {
+            lastScrollPosition = currentScrollPosition;
+            return;
+        }
+        
+        lastScrollPosition = currentScrollPosition;
         
         if (scrollTimeout) clearTimeout(scrollTimeout);
         
         scrollTimeout = setTimeout(async () => {
             const scrollPosition = window.innerHeight + window.scrollY;
-            const threshold = document.body.offsetHeight - 600; // Cargar 600px antes del final
-            
-            console.log('Scroll check:', {
-                scrollPosition,
-                threshold,
-                diff: threshold - scrollPosition,
-                currentPage: AppState.currentPage,
-                totalPages: AppState.totalPages,
-                currentMovies: AppState.tmdbMovies.length
-            });
+            const threshold = document.body.offsetHeight - 500;
             
             if (scrollPosition >= threshold) {
-                console.log('Cargando más películas...');
-                await renderMovies(true); // true = loadMore mode
+                try {
+                    await renderMovies(true);
+                } catch (error) {
+                    console.error('Error al cargar más películas:', error);
+                }
             }
-        }, 300);
+        }, 200);
     });
 }
