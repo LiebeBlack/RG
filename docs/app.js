@@ -41,15 +41,37 @@ function debounce(fn, delay = 250) {
  * TMDB API Functions
  */
 
-// Cargar películas iniciales de TMDB
+// Cargar películas iniciales de TMDB con precarga optimizada
 async function loadTMDBMovies() {
     try {
+        const isMobile = window.innerWidth <= 650;
+        const pagesToPreload = isMobile ? 1 : 2; // Reducido en móvil para usar menos recursos
+        
+        // Cargar primera página
         const result = await getPopularTMDB(AppState.searchLanguage, 1);
         if (result.movies && result.movies.length > 0) {
             AppState.tmdbMovies = result.movies;
             AppState.totalPages = result.totalPages;
             AppState.currentPage = 2;
             AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
+            
+            // Precargar páginas adicionales solo en desktop
+            if (!isMobile) {
+                for (let i = 2; i <= pagesToPreload && i <= AppState.totalPages; i++) {
+                    const additionalResult = await getPopularTMDB(AppState.searchLanguage, i);
+                    if (additionalResult.movies && additionalResult.movies.length > 0) {
+                        const existingIds = new Set(AppState.tmdbMovies.map(m => m.id));
+                        const newMovies = additionalResult.movies.filter(m => !existingIds.has(m.id));
+                        AppState.tmdbMovies.push(...newMovies);
+                        AppState.currentPage = i + 1;
+                        
+                        // Limpiar memoria cada 20 películas en móvil
+                        if (isMobile && AppState.tmdbMovies.length > 40) {
+                            AppState.tmdbMovies = AppState.tmdbMovies.slice(0, 40);
+                        }
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Error cargando películas de TMDB:', error);
@@ -254,23 +276,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         setupEventListeners();
         
-        // Actualizar texto de loading si existe
-        if (DOM.loadingText) {
-            DOM.loadingText.textContent = 'Cargando películas...';
-        }
-        
-        // Cargar películas iniciales inmediatamente
+        // Cargar películas iniciales
         await loadTMDBMovies();
         
-        // Actualizar texto de loading
-        if (DOM.loadingText) {
-            DOM.loadingText.textContent = 'Listo...';
-        }
-        
-        // Renderizar películas inmediatamente
+        // Renderizar películas
         await renderMovies();
         
-        // Ocultar loading instantáneo
+        // Ocultar loading
         showLoading(false);
         
     } catch (error) {
@@ -334,9 +346,18 @@ async function renderMovies(loadMore = false) {
     }
 
     // Cargar datos de la API
+    // Detectar si es móvil una sola vez para toda la función
+    const isMobile = window.innerWidth <= 650;
     let newMoviesCount = 0;
     if (apiFunction && (AppState.hasMorePages || !loadMore) && !AppState.isLoadingMore) {
         AppState.isLoadingMore = true;
+        
+        // En móvil, limitar películas en memoria para rendimiento
+        if (isMobile && AppState.tmdbMovies.length > 50) {
+            AppState.tmdbMovies = AppState.tmdbMovies.slice(0, 50);
+        }
+        
+        const optimizedPage = AppState.currentPage;
         
         const result = await apiFunction(...Object.values(apiParams));
         
@@ -354,7 +375,8 @@ async function renderMovies(loadMore = false) {
             }
         } else {
             // Carga inicial: limpiar completamente y asignar nuevas películas
-            AppState.tmdbMovies = result.movies;
+            // En móvil, cargar más películas para scroll precargado
+            AppState.tmdbMovies = isMobile ? result.movies.slice(0, 40) : result.movies.slice(0, 60);
         }
         
         AppState.totalPages = result.totalPages;
@@ -434,14 +456,21 @@ async function renderMovies(loadMore = false) {
             card.setAttribute('role', 'listitem');
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', `${escapeHtml(movie.title)} - ${escapeHtml(movie.category || 'Sin categoría')}`);
-            // Stagger animation delay per card (max 0.8s) - ultra rápido para móvil
+            // Stagger animation delay per card (instantáneo en móvil)
             const actualIndex = loadMore ? AppState.tmdbMovies.length - moviesToRenderCards.length + index : index;
-            card.style.animationDelay = `${Math.min(actualIndex * 0.015, 0.8)}s`;
+            const maxDelay = isMobile ? 0 : 0.3;
+            const delayMultiplier = isMobile ? 0 : 0.005;
+            card.style.animationDelay = `${Math.min(actualIndex * delayMultiplier, maxDelay)}s`;
 
             const imgSrc = movie.previewUrl || movie.coverUrl || AppState.defaultPlaceholder;
             const safeTitle = escapeHtml(movie.title);
             const safeOriginalTitle = movie.originalTitle && movie.originalTitle !== movie.title ? escapeHtml(movie.originalTitle) : '';
             const safeCategory = escapeHtml(movie.category || 'Otro');
+
+            // Usar la variable isMobile ya declarada arriba
+            const optimizedImgSrc = isMobile && imgSrc.includes('tmdb.org') 
+                ? imgSrc.replace('/w500/', '/w342/') 
+                : imgSrc;
 
             // Mostrar título original si es diferente al título en el idioma actual
             const titleHTML = safeOriginalTitle ?
@@ -451,7 +480,7 @@ async function renderMovies(loadMore = false) {
             card.innerHTML = `
                 <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
                 <div class="card-img-container">
-                    <img class="card-img" src="${imgSrc}" alt="Portada de ${safeTitle}" loading="eager" decoding="async" style="opacity: 1;">
+                    <img class="card-img" src="${optimizedImgSrc}" alt="Portada de ${safeTitle}" loading="eager" decoding="async" style="opacity: 1;">
                 </div>
                 <div class="card-overlay">
                     ${titleHTML}
@@ -499,12 +528,10 @@ async function renderMovies(loadMore = false) {
             const newImages = Array.from(DOM.grid.querySelectorAll('.card-img')).slice(-newMoviesCount);
             newImages.forEach(img => {
                 if (img.src && !img.complete) {
-                    // Forzar recarga de la imagen
+                    // Forzar recarga de la imagen inmediata
                     const currentSrc = img.src;
                     img.src = '';
-                    setTimeout(() => {
-                        img.src = currentSrc;
-                    }, 10);
+                    img.src = currentSrc;
                 }
             });
         }
@@ -530,13 +557,22 @@ function renderSelectedList() {
         return;
     }
     
+    const isMobile = window.innerWidth <= 650;
+    
     selectedList.forEach((movie, index) => {
         const li = document.createElement('li');
         li.setAttribute('role', 'listitem');
         li.style.animationDelay = `${index * 0.05}s`;
+        
         const safeTitle = escapeHtml(movie.title);
+        const safeSynopsis = movie.overview ? escapeHtml(movie.overview) : 'Sin descripción disponible';
+        
+        // Synopsis siempre visible en móvil y desktop
         li.innerHTML = `
-            <span class="selected-title" title="${safeTitle}">${safeTitle}</span>
+            <div class="selected-movie-info">
+                <span class="selected-title" title="${safeTitle}">${safeTitle}</span>
+                <p class="selected-synopsis">${safeSynopsis}</p>
+            </div>
             <button class="remove-item" title="Quitar ${safeTitle}" aria-label="Quitar ${safeTitle} de la lista"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
         `;
         
@@ -547,6 +583,24 @@ function renderSelectedList() {
                 const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
                 if (card) {
                     card.classList.remove('selected');
+                    
+                    // Ocultar el badge de selección
+                    const badge = card.querySelector('.select-badge');
+                    if (badge) {
+                        badge.style.opacity = '0';
+                        badge.style.transform = 'scale(0.7)';
+                    }
+                    
+                    // Limpiar completamente el aria-label
+                    const currentLabel = card.getAttribute('aria-label');
+                    if (currentLabel) {
+                        const cleanLabel = currentLabel.replace(' (seleccionada)', '').trim();
+                        card.setAttribute('aria-label', cleanLabel);
+                    }
+                    
+                    // Forzar limpieza de estilos inline
+                    card.style.transform = '';
+                    card.style.transition = '';
                 }
                 renderSelectedList(); // Actualizar el modal sin recargar todo
                 updateCartUI();
@@ -567,24 +621,43 @@ function toggleSelection(id, cardElement) {
     
     try {
         const isSelected = AppState.selectedMovies.has(id);
+        const isMobile = window.innerWidth <= 650;
         
-        // Animación de feedback táctil
-        cardElement.style.transition = 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)';
+        // Solo animaciones en desktop, no en móvil
+        if (!isMobile) {
+            cardElement.style.transition = 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
         
         if (isSelected) {
             AppState.selectedMovies.delete(id);
             cardElement.classList.remove('selected');
-            const currentLabel = cardElement.getAttribute('aria-label');
-            if (currentLabel) {
-                cardElement.setAttribute('aria-label', currentLabel.replace(' (seleccionada)', ''));
+            
+            // Ocultar el badge de selección
+            const badge = cardElement.querySelector('.select-badge');
+            if (badge) {
+                badge.style.opacity = '0';
+                badge.style.transform = 'scale(0.7)';
             }
             
-            // Animación de deselección
-            cardElement.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                cardElement.style.transform = '';
-                cardElement.style.transition = '';
-            }, 150);
+            // Limpiar completamente el aria-label
+            const currentLabel = cardElement.getAttribute('aria-label');
+            if (currentLabel) {
+                const cleanLabel = currentLabel.replace(' (seleccionada)', '').trim();
+                cardElement.setAttribute('aria-label', cleanLabel);
+            }
+            
+            // Forzar limpieza de estilos inline
+            cardElement.style.transform = '';
+            cardElement.style.transition = '';
+            
+            // Animación de deselección solo en desktop
+            if (!isMobile) {
+                cardElement.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    cardElement.style.transform = '';
+                    cardElement.style.transition = '';
+                }, 150);
+            }
             
             showToast('Película eliminada de la selección', 'info');
         } else {
@@ -595,21 +668,25 @@ function toggleSelection(id, cardElement) {
                 cardElement.setAttribute('aria-label', currentLabel + ' (seleccionada)');
             }
             
-            // Animación de selección más pronunciada
-            cardElement.style.transform = 'scale(1.08)';
-            setTimeout(() => {
-                cardElement.style.transform = '';
-                cardElement.style.transition = '';
-            }, 200);
+            // Animación de selección solo en desktop
+            if (!isMobile) {
+                cardElement.style.transform = 'scale(1.08)';
+                setTimeout(() => {
+                    cardElement.style.transform = '';
+                    cardElement.style.transition = '';
+                }, 200);
+            }
             
             showToast('Película añadida a la selección', 'success');
             
-            // Animación Pulse en el badge del carrito
-            const badge = document.querySelector('.cart-badge');
-            if (badge) {
-                badge.classList.remove('pulse');
-                void badge.offsetWidth; // trigger reflow for animation restart
-                badge.classList.add('pulse');
+            // Animación Pulse en el badge del carrito solo en desktop
+            if (!isMobile) {
+                const badge = document.querySelector('.cart-badge');
+                if (badge) {
+                    badge.classList.remove('pulse');
+                    void badge.offsetWidth; // trigger reflow for animation restart
+                    badge.classList.add('pulse');
+                }
             }
         }
         updateCartUI();
@@ -822,6 +899,24 @@ function setupEventListeners() {
             document.querySelectorAll('.movie-card.selected').forEach(card => {
                 if (card) {
                     card.classList.remove('selected');
+                    
+                    // Ocultar el badge de selección
+                    const badge = card.querySelector('.select-badge');
+                    if (badge) {
+                        badge.style.opacity = '0';
+                        badge.style.transform = 'scale(0.7)';
+                    }
+                    
+                    // Limpiar completamente el aria-label
+                    const currentLabel = card.getAttribute('aria-label');
+                    if (currentLabel) {
+                        const cleanLabel = currentLabel.replace(' (seleccionada)', '').trim();
+                        card.setAttribute('aria-label', cleanLabel);
+                    }
+                    
+                    // Forzar limpieza de estilos inline
+                    card.style.transform = '';
+                    card.style.transition = '';
                 }
             });
             renderSelectedList(); // Actualizar modal sin recargar
@@ -883,7 +978,7 @@ function setupEventListeners() {
         
         scrollTimeout = setTimeout(async () => {
             const scrollPosition = window.innerHeight + window.scrollY;
-            const threshold = document.body.offsetHeight - 500;
+            const threshold = document.body.offsetHeight - 800;
             
             if (scrollPosition >= threshold) {
                 try {
@@ -892,6 +987,6 @@ function setupEventListeners() {
                     console.error('Error al cargar más películas:', error);
                 }
             }
-        }, 200);
+        }, 100);
     });
 }

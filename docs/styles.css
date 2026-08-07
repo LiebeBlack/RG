@@ -21,24 +21,24 @@
     --danger: #ef4444;
     --warning: #f59e0b;
 
-    /* Modern Fluid Layout mejorado - optimizado para móvil */
-    --nav-height: clamp(50px, 5vh + 20px, 65px);
-    --fluid-gap: clamp(12px, 2vw + 8px, 24px);
-    --card-min-width: clamp(140px, 18vw + 20px, 280px);
-    --border-radius: 16px;
+    /* Modern Fluid Layout mejorado - ultraligero para móvil */
+    --nav-height: clamp(48px, 4vh + 16px, 60px);
+    --fluid-gap: clamp(10px, 1.5vw + 6px, 20px);
+    --card-min-width: clamp(120px, 15vw + 15px, 240px);
+    --border-radius: 14px;
     --border-radius-sm: 8px;
-    --border-radius-lg: 20px;
+    --border-radius-lg: 18px;
 
-    /* Modern Typography - optimizado para móvil */
-    --font-h1: clamp(1.5rem, 3vw + 0.8rem, 2.2rem);
-    --font-h2: clamp(1.3rem, 2.5vw + 0.7rem, 1.8rem);
-    --font-card-title: clamp(0.9rem, 2vw + 0.5rem, 1.15rem);
-    --font-body: clamp(0.85rem, 1vw + 0.7rem, 0.95rem);
-    --font-small: clamp(0.75rem, 0.8vw + 0.6rem, 0.85rem);
+    /* Modern Typography - ultraligero */
+    --font-h1: clamp(1.4rem, 2.5vw + 0.6rem, 2rem);
+    --font-h2: clamp(1.2rem, 2vw + 0.5rem, 1.6rem);
+    --font-card-title: clamp(0.85rem, 1.5vw + 0.4rem, 1.05rem);
+    --font-body: clamp(0.8rem, 0.8vw + 0.6rem, 0.9rem);
+    --font-small: clamp(0.7rem, 0.6vw + 0.5rem, 0.8rem);
 
-    --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    --transition-fast: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    --transition-smooth: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Reset */
@@ -446,16 +446,16 @@ a:hover { color: var(--accent-hover); }
 }
 .movie-card {
     position: relative; border-radius: var(--border-radius); overflow: hidden;
-    background: var(--bg-card); border: 2px solid rgba(255, 255, 255, 0.08);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease; cursor: pointer; aspect-ratio: 2 / 3; display: flex; flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    animation: cardFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-    will-change: transform, opacity;
+    background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; aspect-ratio: 2 / 3; display: flex; flex-direction: column;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform;
 }
 .movie-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-    border-color: rgba(139, 92, 246, 0.4);
+    transform: translateY(-3px) scale(1.005);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(139, 92, 246, 0.25);
 }
 .movie-card:focus-visible {
     outline: 3px solid var(--accent);
@@ -463,37 +463,80 @@ a:hover { color: var(--accent-hover); }
     border-radius: var(--border-radius);
 }
 
-/* Estado seleccionado - Más visible y moderno */
+/* Estado seleccionado - PREMIUM ELÉCTRICO */
 .movie-card.selected {
-    border: 3px solid var(--accent);
-    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3), 0 20px 60px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
-    transform: translateY(-10px) scale(1.02);
-    animation: selectedPulse 2s ease-in-out infinite;
+    border: 4px solid transparent !important;
+    background: linear-gradient(#0f0f0f, #0f0f0f) padding-box,
+                linear-gradient(135deg, #ffea00 0%, #ff0055 50%, #ffea00 100%) border-box !important;
+    box-shadow: 0 0 0 3px rgba(255, 234, 0, 0.3), 0 0 25px rgba(255, 0, 85, 0.7), 0 10px 40px rgba(255, 234, 0, 0.4) !important;
+    transform: translateY(-8px) scale(1.06) !important;
+    z-index: 10 !important;
+    animation: none !important;
 }
 
 .movie-card.selected .card-img {
-    opacity: 0.9;
-    filter: saturate(1.2) contrast(1.1) brightness(1.05);
+    opacity: 0.85;
+    filter: saturate(1.4) contrast(1.3) brightness(1.15);
+    position: relative;
+}
+
+.movie-card.selected::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to top, 
+        #ffea00 0%, 
+        #ff0055 40%, 
+        rgba(255, 0, 85, 0.5) 70%,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: normal;
+    animation: liquidFlow 3s ease-in-out infinite;
+}
+
+@keyframes liquidFlow {
+    0%, 100% {
+        height: 55%;
+        opacity: 0.9;
+    }
+    50% {
+        height: 65%;
+        opacity: 1;
+    }
 }
 
 .movie-card.selected .card-overlay {
-    background: linear-gradient(to top, rgba(139, 92, 246, 0.95) 0%, rgba(139, 92, 246, 0.6) 50%, transparent 100%);
+    background: linear-gradient(to top, rgba(255, 0, 85, 0.95) 0%, rgba(255, 234, 0, 0.7) 50%, transparent 100%);
+    z-index: 3;
 }
 
 .movie-card.selected .card-title {
     color: #fff;
-    text-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 2px 12px rgba(0,0,0,0.9);
+    text-shadow: 0 0 20px rgba(255, 234, 0, 1), 0 0 10px rgba(255, 0, 85, 0.8), 0 2px 8px rgba(0,0,0,0.9);
+    font-weight: 700;
+    position: relative;
+    z-index: 4;
+}
+
+.movie-card.selected .card-category {
+    color: #ffea00;
+    text-shadow: 0 0 15px rgba(255, 234, 0, 0.9), 0 0 8px rgba(255, 0, 85, 0.7);
+    font-weight: 600;
 }
 
 .movie-card.selected .select-badge {
-    background: linear-gradient(135deg, var(--accent), #a855f7);
-    border-color: var(--accent);
+    background: linear-gradient(135deg, #ffea00, #ff0055) !important;
+    border: 3px solid #fff !important;
     color: #fff;
-    transform: scale(1.2);
-    font-size: clamp(1.1rem, 1.3vw, 1.35rem);
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.6);
-    opacity: 1;
-    animation: badgeGlow 1.5s ease-in-out infinite;
+    transform: scale(1.35) !important;
+    opacity: 1 !important;
+    box-shadow: 0 0 20px rgba(255, 234, 0, 0.9), 0 0 30px rgba(255, 0, 85, 0.7), 0 6px 15px rgba(0,0,0,0.6) !important;
+    font-size: 1.3rem !important;
+    animation: none !important;
 }
 
 @keyframes selectedPulse {
@@ -575,17 +618,22 @@ a:hover { color: var(--accent-hover); }
 .select-badge {
     position: absolute; top: clamp(12px, 2vw, 16px); right: clamp(12px, 2vw, 16px);
     width: clamp(36px, 3.5vw, 44px); height: clamp(36px, 3.5vw, 44px);
-    border-radius: 50%; background: rgba(139, 92, 246, 0.9); border: 2px solid rgba(139, 92, 246, 0.95);
+    border-radius: 50%; background: rgba(139, 92, 246, 0.95); border: 3px solid rgba(139, 92, 246, 1);
     display: flex; align-items: center; justify-content: center; color: #fff;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 2; backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 2; backdrop-filter: blur(10px);
     font-size: clamp(1rem, 1.1vw, 1.2rem);
-    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.5);
     opacity: 0;
     transform: scale(0.7);
 }
 .movie-card:hover .select-badge {
     opacity: 1;
     transform: scale(1);
+}
+/* Badge siempre visible cuando está seleccionado */
+.movie-card.selected .select-badge {
+    opacity: 1 !important;
+    transform: scale(1.3) !important;
 }
 .movie-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.4), 0 12px 32px rgba(139, 92, 246, 0.3); }
 .movie-card.selected .card-img { opacity: 0.85; filter: grayscale(8%) contrast(1.05) brightness(1.02); }
@@ -815,10 +863,32 @@ a:hover { color: var(--accent-hover); }
     display: flex;
     align-items: center;
     gap: 8px;
+    font-weight: 500;
 }
 .selected-title::before {
     content: '🎬';
     font-size: 1.1em;
+}
+.selected-movie-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.selected-synopsis {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    padding: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 .remove-item { 
     color: #fff; 
@@ -1018,28 +1088,92 @@ footer {
 
     .movie-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        padding: 10px;
+        gap: 8px;
+        padding: 8px;
     }
     .movie-card { 
         aspect-ratio: 2 / 3; 
         height: auto;
-        border-radius: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     .card-title { 
-        font-size: 0.75rem; 
-        line-height: 1.1;
-        -webkit-line-clamp: 1;
+        font-size: 0.8rem; 
+        line-height: 1.3;
+        -webkit-line-clamp: 2;
+        padding: 0 6px;
+        margin: 4px 0 !important;
+        word-break: break-word;
     }
     .card-category {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
+        padding: 0 6px;
+        margin: 0 0 4px 0 !important;
     }
     .select-badge {
-        width: 26px;
-        height: 26px;
-        font-size: 0.75rem;
-        top: 6px;
-        right: 6px;
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+        top: 8px;
+        right: 8px;
+        border: 2px solid rgba(255, 234, 0, 0.8) !important;
+        background: linear-gradient(135deg, rgba(255, 234, 0, 0.9), rgba(255, 0, 85, 0.9)) !important;
+    }
+    
+    .movie-card.selected .select-badge {
+        background: linear-gradient(135deg, #ffea00, #ff0055) !important;
+        border: 3px solid #fff !important;
+        transform: scale(1.35) !important;
+        box-shadow: 0 0 15px rgba(255, 234, 0, 0.8), 0 0 25px rgba(255, 0, 85, 0.7) !important;
+    }
+    .card-img-container {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .card-img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+    }
+    
+    /* Correcciones del overlay de cards */
+    .card-overlay {
+        padding: 8px 6px !important;
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%) !important;
+    }
+    
+    /* Correcciones de textos generales */
+    h1, h2, h3 {
+        overflow-wrap: break-word !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Correcciones de footer */
+    .footer {
+        padding: 20px 16px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .footer a {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Correcciones de espacios */
+    body {
+        overflow-x: hidden !important;
+    }
+    
+    .container {
+        padding: 8px !important;
+    }
+    
+    /* Correcciones de badges y contadores */
+    .cart-badge {
+        font-weight: 600 !important;
+    }
+    
+    .modal-count {
+        font-weight: 600 !important;
     }
     .toast { 
         min-width: unset; 
@@ -1114,6 +1248,271 @@ footer {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* Optimizaciones extremas para móvil - sobrescribe todo */
+@media (max-width: 650px) {
+    body { 
+        padding-top: 48px !important; 
+        padding-bottom: 90px !important;
+    }
+    
+    .movie-card {
+        animation: none !important;
+        transition: none !important;
+        will-change: auto !important;
+    }
+    
+    .movie-card:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .movie-card.selected {
+        border: 4px solid transparent !important;
+        background: linear-gradient(#0f0f0f, #0f0f0f) padding-box,
+                    linear-gradient(135deg, #ffea00 0%, #ff0055 50%, #ffea00 100%) border-box !important;
+        box-shadow: 0 0 0 3px rgba(255, 234, 0, 0.3), 0 0 25px rgba(255, 0, 85, 0.7), 0 10px 40px rgba(255, 234, 0, 0.4) !important;
+        transform: translateY(-8px) scale(1.06) !important;
+        z-index: 10 !important;
+        animation: none !important;
+    }
+    
+    .movie-card.selected .card-img {
+        opacity: 0.85 !important;
+        filter: saturate(1.4) contrast(1.3) brightness(1.15) !important;
+        position: relative !important;
+    }
+    
+    .movie-card.selected::before {
+        content: '' !important;
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 60% !important;
+        background: linear-gradient(to top, 
+            #ffea00 0%, 
+            #ff0055 40%, 
+            rgba(255, 0, 85, 0.5) 70%,
+            transparent 100%) !important;
+        pointer-events: none !important;
+        z-index: 1 !important;
+        mix-blend-mode: normal !important;
+        animation: liquidFlow 3s ease-in-out infinite !important;
+    }
+    
+    @keyframes liquidFlow {
+        0%, 100% {
+            height: 55% !important;
+            opacity: 0.9 !important;
+        }
+        50% {
+            height: 65% !important;
+            opacity: 1 !important;
+        }
+    }
+    
+    .movie-card.selected .card-overlay {
+        z-index: 3 !important;
+    }
+    
+    .movie-card.selected .card-title {
+        z-index: 4 !important;
+    }
+    
+    .movie-card.selected .card-title {
+        color: #fff !important;
+        text-shadow: 0 0 20px rgba(255, 234, 0, 1), 0 0 10px rgba(255, 0, 85, 0.8), 0 2px 8px rgba(0,0,0,0.9) !important;
+        font-weight: 700 !important;
+    }
+    
+    .movie-card.selected .card-category {
+        color: #ffea00 !important;
+        text-shadow: 0 0 15px rgba(255, 234, 0, 0.9), 0 0 8px rgba(255, 0, 85, 0.7) !important;
+        font-weight: 600 !important;
+    }
+    
+    .movie-card.selected .select-badge {
+        background: linear-gradient(135deg, #ffea00, #ff0055) !important;
+        border: 3px solid #fff !important;
+        color: #fff !important;
+        transform: scale(1.35) !important;
+        opacity: 1 !important;
+        box-shadow: 0 0 20px rgba(255, 234, 0, 0.9), 0 0 30px rgba(255, 0, 85, 0.7), 0 6px 15px rgba(0,0,0,0.6) !important;
+        font-size: 1.3rem !important;
+    }
+    
+    .modal {
+        animation: none !important;
+    }
+    
+    .modal-content {
+        animation: none !important;
+        transform: none !important;
+    }
+    
+    .toast {
+        animation: none !important;
+    }
+    
+    .floating-cart {
+        animation: none !important;
+    }
+    
+    .close-modal-btn {
+        animation: none !important;
+    }
+    
+    /* Mejoras para la lista de selección en móvil */
+    .selected-list li {
+        padding: 10px 12px !important;
+        gap: 10px !important;
+    }
+    
+    .selected-title {
+        font-size: 0.85rem !important;
+        max-width: 100% !important;
+        font-weight: 500 !important;
+    }
+    
+    .selected-movie-info {
+        gap: 4px !important;
+    }
+    
+    .selected-synopsis {
+        font-size: 0.7rem !important;
+        -webkit-line-clamp: 4 !important;
+        line-height: 1.3 !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    .remove-item {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .card-title {
+        -webkit-line-clamp: 2 !important;
+        word-break: break-word !important;
+        padding: 0 4px !important;
+    }
+    
+    .card-category {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        padding: 0 4px !important;
+    }
+    
+    .logo h1 {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    /* Correcciones generales de elementos en móvil */
+    * {
+        box-sizing: border-box !important;
+    }
+    
+    .btn {
+        font-size: 0.75rem !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+    }
+    
+    .modal-content {
+        width: 95% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 16px !important;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2rem !important;
+        margin: 0 !important;
+    }
+    
+    .modal-count {
+        font-size: 0.8rem !important;
+    }
+    
+    .modal-body {
+        padding: 12px 0 !important;
+    }
+    
+    .selected-list {
+        gap: 6px !important;
+    }
+    
+    .selected-list li {
+        border-radius: 8px !important;
+        padding: 10px !important;
+        margin: 0 !important;
+    }
+    
+    .modal-footer {
+        gap: 8px !important;
+        padding: 12px 0 0 0 !important;
+    }
+    
+    .modal-footer .btn {
+        font-size: 0.7rem !important;
+        padding: 8px 12px !important;
+    }
+    
+    /* Correcciones de toast */
+    .toast {
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        border-radius: 10px !important;
+        padding: 12px 16px !important;
+    }
+    
+    /* Correcciones de loading */
+    .loading-overlay {
+        padding: 20px !important;
+    }
+    
+    .loading-spinner {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .loading-text {
+        font-size: 0.9rem !important;
+        margin-top: 12px !important;
+    }
+    
+    /* Correcciones de navegación */
+    .nav-container {
+        align-items: center !important;
+    }
+    
+    .search-bar input {
+        font-size: 0.8rem !important;
+        padding: 8px 12px 8px 32px !important;
+        height: 36px !important;
+    }
+    
+    /* Correcciones de botones de acción */
+    .actions {
+        align-items: center !important;
+    }
+    
+    .btn-compact {
+        height: 36px !important;
+        min-width: 32px !important;
     }
 }
 
