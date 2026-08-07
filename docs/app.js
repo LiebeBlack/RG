@@ -234,6 +234,9 @@ const DOM = {
  * Inicialización
  */
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('=== Iniciando aplicación ===');
+    console.log('Estado inicial:', AppState);
+    
     showLoading(true);
     try {
         setupEventListeners();
@@ -243,6 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Error al cargar el catálogo', 'error');
     }
     showLoading(false);
+    
+    console.log('=== Aplicación iniciada ===');
 });
 
 /**
@@ -273,11 +278,17 @@ async function renderMovies(loadMore = false) {
 
     // Detectar si cambiaron los filtros (resetear estado)
     if (!loadMore && (query !== AppState.currentQuery || category !== AppState.currentCategory)) {
+        console.log('Filtros cambiados - reseteando estado');
+        console.log(`Antes: query="${AppState.currentQuery}", category="${AppState.currentCategory}"`);
+        console.log(`Después: query="${query}", category="${category}"`);
+        
         AppState.currentQuery = query;
         AppState.currentCategory = category;
         AppState.currentPage = 1;
         AppState.tmdbMovies = [];
         AppState.hasMorePages = true;
+        
+        console.log('Estado reseteado correctamente');
     }
 
     // Determinar la función API a usar
@@ -311,6 +322,8 @@ async function renderMovies(loadMore = false) {
             const newMovies = result.movies.filter(m => !existingIds.has(m.id));
             
             console.log(`Películas recibidas: ${result.movies.length}, Películas nuevas: ${newMovies.length}`);
+            console.log(`IDs recibidos: ${result.movies.map(m => m.id).slice(0, 3).join(', ')}...`);
+            console.log(`IDs existentes: ${Array.from(existingIds).slice(0, 3).join(', ')}...`);
             
             if (newMovies.length > 0) {
                 const previousLength = AppState.tmdbMovies.length;
@@ -322,8 +335,9 @@ async function renderMovies(loadMore = false) {
                 AppState.hasMorePages = false; // No hay más películas únicas
             }
         } else {
+            // Carga inicial: limpiar completamente y asignar nuevas películas
             AppState.tmdbMovies = result.movies;
-            console.log(`Carga inicial: ${result.movies.length} películas`);
+            console.log(`Carga inicial: ${result.movies.length} películas. IDs: ${result.movies.map(m => m.id).slice(0, 5).join(', ')}...`);
         }
         
         AppState.totalPages = result.totalPages;
@@ -336,13 +350,16 @@ async function renderMovies(loadMore = false) {
 
     let moviesToRender = AppState.tmdbMovies;
 
-    if (sort === 'az') moviesToRender.sort((a, b) => a.title.localeCompare(b.title, 'es'));
-    else if (sort === 'za') moviesToRender.sort((a, b) => b.title.localeCompare(a.title, 'es'));
-    else moviesToRender.sort((a, b) => {
-        const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
-        const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
-        return dateB - dateA;
-    });
+    // Solo ordenar en carga inicial, no en carga incremental
+    if (!loadMore) {
+        if (sort === 'az') moviesToRender.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+        else if (sort === 'za') moviesToRender.sort((a, b) => b.title.localeCompare(a.title, 'es'));
+        else moviesToRender.sort((a, b) => {
+            const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+            const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+            return dateB - dateA;
+        });
+    }
 
     if (!DOM.grid) return;
     
@@ -367,12 +384,13 @@ async function renderMovies(loadMore = false) {
             DOM.emptyState.setAttribute('aria-hidden', 'true');
         }
         
-        // Solo renderizar las nuevas películas si es carga incremental
+        // Si es carga incremental, solo renderizar las películas nuevas SIN reordenar
         let moviesToRenderCards;
         if (loadMore && newMoviesCount > 0) {
-            // Solo renderizar las películas que se acabaron de añadir
-            moviesToRenderCards = moviesToRender.slice(-newMoviesCount);
-            console.log(`Renderizando solo ${moviesToRenderCards.length} películas nuevas`);
+            // Usar las últimas películas añadidas exactamente como vienen de la API
+            moviesToRenderCards = AppState.tmdbMovies.slice(-newMoviesCount);
+            console.log(`Renderizando solo ${moviesToRenderCards.length} películas nuevas sin reordenar`);
+            console.log(`IDs a renderizar: ${moviesToRenderCards.map(m => m.id).join(', ')}`);
         } else {
             moviesToRenderCards = moviesToRender;
             console.log(`Renderizando todas ${moviesToRenderCards.length} películas`);
@@ -387,6 +405,13 @@ async function renderMovies(loadMore = false) {
         const fragment = document.createDocumentFragment();
 
         moviesToRenderCards.forEach((movie, index) => {
+            // Verificar que la película no ya existe en el DOM
+            const existingCard = DOM.grid.querySelector(`[data-id="${movie.id}"]`);
+            if (existingCard) {
+                console.log(`Card con ID ${movie.id} ya existe en DOM, saltando`);
+                return;
+            }
+            
             const card = document.createElement('div');
             card.className = 'movie-card';
             card.dataset.id = movie.id;
@@ -766,7 +791,8 @@ function setupEventListeners() {
     }
 
     // Infinite Scroll para cargar más películas
-    window.addEventListener('scroll', debounce(async () => {
+    let scrollTimeout = null;
+    window.addEventListener('scroll', () => {
         if (AppState.isLoadingMore || !AppState.hasMorePages) {
             console.log('Scroll ignorado:', {
                 isLoadingMore: AppState.isLoadingMore,
@@ -775,21 +801,25 @@ function setupEventListeners() {
             return;
         }
         
-        const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight - 600; // Cargar 600px antes del final
+        if (scrollTimeout) clearTimeout(scrollTimeout);
         
-        console.log('Scroll check:', {
-            scrollPosition,
-            threshold,
-            diff: threshold - scrollPosition,
-            currentPage: AppState.currentPage,
-            totalPages: AppState.totalPages,
-            currentMovies: AppState.tmdbMovies.length
-        });
-        
-        if (scrollPosition >= threshold) {
-            console.log('Cargando más películas...');
-            await renderMovies(true); // true = loadMore mode
-        }
-    }, 300));
+        scrollTimeout = setTimeout(async () => {
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const threshold = document.body.offsetHeight - 600; // Cargar 600px antes del final
+            
+            console.log('Scroll check:', {
+                scrollPosition,
+                threshold,
+                diff: threshold - scrollPosition,
+                currentPage: AppState.currentPage,
+                totalPages: AppState.totalPages,
+                currentMovies: AppState.tmdbMovies.length
+            });
+            
+            if (scrollPosition >= threshold) {
+                console.log('Cargando más películas...');
+                await renderMovies(true); // true = loadMore mode
+            }
+        }, 300);
+    });
 }
