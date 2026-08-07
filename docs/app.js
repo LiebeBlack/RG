@@ -471,8 +471,10 @@ async function renderMovies(loadMore = false) {
                 img.onerror = handleImageError;
             }
 
-            // Click para seleccionar/deseleccionar
-            card.addEventListener('click', () => {
+                    // Click para seleccionar/deseleccionar
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (card) {
                     toggleSelection(movie.id, card);
                 }
@@ -480,6 +482,7 @@ async function renderMovies(loadMore = false) {
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (card) {
                         toggleSelection(movie.id, card);
                     }
@@ -623,6 +626,17 @@ function updateCartUI() {
     if (DOM.cart) {
         if (count > 0) {
             DOM.cart.classList.remove('hide-dock');
+            DOM.cart.style.display = 'flex';
+            DOM.cart.style.visibility = 'visible';
+            DOM.cart.style.opacity = '1';
+            DOM.cart.style.pointerEvents = 'auto';
+            
+            // En móvil, resetear transform
+            if (window.innerWidth <= 900) {
+                DOM.cart.style.transform = 'none';
+            } else {
+                DOM.cart.style.transform = 'translateX(-50%) translateY(0)';
+            }
         } else {
             DOM.cart.classList.add('hide-dock');
         }
