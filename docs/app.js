@@ -307,7 +307,17 @@ async function renderMovies(loadMore = false) {
         const result = await apiFunction(...Object.values(apiParams));
         
         if (loadMore) {
-            AppState.tmdbMovies.push(...result.movies);
+            // Evitar duplicados usando Set basado en ID
+            const existingIds = new Set(AppState.tmdbMovies.map(m => m.id));
+            const newMovies = result.movies.filter(m => !existingIds.has(m.id));
+            
+            if (newMovies.length > 0) {
+                AppState.tmdbMovies.push(...newMovies);
+                console.log(`Añadidas ${newMovies.length} películas nuevas. Total: ${AppState.tmdbMovies.length}`);
+            } else {
+                console.log('No se encontraron películas nuevas en esta página');
+                AppState.hasMorePages = false; // No hay más películas únicas
+            }
         } else {
             AppState.tmdbMovies = result.movies;
         }
@@ -716,19 +726,20 @@ function setupEventListeners() {
         }
         
         const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight - 300; // Cargar 300px antes del final
+        const threshold = document.body.offsetHeight - 500; // Cargar 500px antes del final
         
         console.log('Scroll check:', {
             scrollPosition,
             threshold,
             diff: threshold - scrollPosition,
             currentPage: AppState.currentPage,
-            totalPages: AppState.totalPages
+            totalPages: AppState.totalPages,
+            currentMovies: AppState.tmdbMovies.length
         });
         
         if (scrollPosition >= threshold) {
             console.log('Cargando más películas...');
             await renderMovies(true); // true = loadMore mode
         }
-    }, 100));
+    }, 200));
 }
