@@ -609,8 +609,8 @@ a:hover { color: var(--accent-hover); }
     border: none; border-radius: 50%; cursor: pointer; font-size: 1.1rem; transition: var(--transition); 
     display: flex; justify-content: center; align-items: center; flex-shrink: 0;
 }
-.remove-item:hover { color: #fff; background: var(--danger); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4); }
-.remove-item:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+.remove-item:hover { color: #fff; background: var(--danger); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+.remove-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @keyframes slideInList { from { opacity: 0; transform: translateX(-15px); } to { opacity: 1; transform: translateX(0); } }
 .modal-footer { margin-top: clamp(15px, 2.5vh, 25px); }
 
