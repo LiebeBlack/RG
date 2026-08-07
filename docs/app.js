@@ -52,22 +52,24 @@ async function searchTMDB(query, language = 'es', page = 1) {
         const data = await response.json();
 
         if (data.results) {
-            const movies = data.results.map(movie => ({
-                id: movie.id,
-                tmdbId: movie.id,
-                title: movie.title,
-                originalTitle: movie.original_title,
-                overview: movie.overview,
-                releaseDate: movie.release_date,
-                posterPath: movie.poster_path,
-                backdropPath: movie.backdrop_path,
-                voteAverage: movie.vote_average,
-                genreIds: movie.genre_ids,
-                category: getGenreFromIds(movie.genre_ids),
-                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                fromTMDB: true
-            }));
+            const movies = data.results
+                .filter(movie => isMovieReleased(movie.release_date))
+                .map(movie => ({
+                    id: movie.id,
+                    tmdbId: movie.id,
+                    title: movie.title,
+                    originalTitle: movie.original_title,
+                    overview: movie.overview,
+                    releaseDate: movie.release_date,
+                    posterPath: movie.poster_path,
+                    backdropPath: movie.backdrop_path,
+                    voteAverage: movie.vote_average,
+                    genreIds: movie.genre_ids,
+                    category: getGenreFromIds(movie.genre_ids),
+                    coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    fromTMDB: true
+                }));
             return { movies, totalPages: data.total_pages || 1 };
         }
         return { movies: [], totalPages: 0 };
@@ -86,22 +88,24 @@ async function getPopularTMDB(language = 'es', page = 1) {
         const data = await response.json();
 
         if (data.results) {
-            const movies = data.results.map(movie => ({
-                id: movie.id,
-                tmdbId: movie.id,
-                title: movie.title,
-                originalTitle: movie.original_title,
-                overview: movie.overview,
-                releaseDate: movie.release_date,
-                posterPath: movie.poster_path,
-                backdropPath: movie.backdrop_path,
-                voteAverage: movie.vote_average,
-                genreIds: movie.genre_ids,
-                category: getGenreFromIds(movie.genre_ids),
-                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                fromTMDB: true
-            }));
+            const movies = data.results
+                .filter(movie => isMovieReleased(movie.release_date))
+                .map(movie => ({
+                    id: movie.id,
+                    tmdbId: movie.id,
+                    title: movie.title,
+                    originalTitle: movie.original_title,
+                    overview: movie.overview,
+                    releaseDate: movie.release_date,
+                    posterPath: movie.poster_path,
+                    backdropPath: movie.backdrop_path,
+                    voteAverage: movie.vote_average,
+                    genreIds: movie.genre_ids,
+                    category: getGenreFromIds(movie.genre_ids),
+                    coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    fromTMDB: true
+                }));
             return { movies, totalPages: data.total_pages || 1 };
         }
         return { movies: [], totalPages: 0 };
@@ -120,22 +124,24 @@ async function getMoviesByGenre(genreId, language = 'es', page = 1) {
         const data = await response.json();
 
         if (data.results) {
-            const movies = data.results.map(movie => ({
-                id: movie.id,
-                tmdbId: movie.id,
-                title: movie.title,
-                originalTitle: movie.original_title,
-                overview: movie.overview,
-                releaseDate: movie.release_date,
-                posterPath: movie.poster_path,
-                backdropPath: movie.backdrop_path,
-                voteAverage: movie.vote_average,
-                genreIds: movie.genre_ids,
-                category: getGenreFromIds(movie.genre_ids),
-                coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
-                fromTMDB: true
-            }));
+            const movies = data.results
+                .filter(movie => isMovieReleased(movie.release_date))
+                .map(movie => ({
+                    id: movie.id,
+                    tmdbId: movie.id,
+                    title: movie.title,
+                    originalTitle: movie.original_title,
+                    overview: movie.overview,
+                    releaseDate: movie.release_date,
+                    posterPath: movie.poster_path,
+                    backdropPath: movie.backdrop_path,
+                    voteAverage: movie.vote_average,
+                    genreIds: movie.genre_ids,
+                    category: getGenreFromIds(movie.genre_ids),
+                    coverUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    previewUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : AppState.defaultPlaceholder,
+                    fromTMDB: true
+                }));
             return { movies, totalPages: data.total_pages || 1 };
         }
         return { movies: [], totalPages: 0 };
@@ -191,6 +197,14 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Verificar si la película ya se estrenó en digital (fecha de lanzamiento <= hoy)
+function isMovieReleased(releaseDate) {
+    if (!releaseDate) return false;
+    const release = new Date(releaseDate);
+    const today = new Date();
+    return release <= today;
+}
+
 // Referencias al DOM (seguras: devuelven null si el elemento no existe)
 const DOM = {
     grid: document.getElementById('movie-grid'),
@@ -200,15 +214,7 @@ const DOM = {
     sortFilter: document.getElementById('sort-filter'),
     languageFilter: document.getElementById('language-filter'),
     totalCount: document.getElementById('total-count-number'),
-    
-    fileUpload: document.getElementById('file-upload'),
-    dropZoneOverlay: document.getElementById('drop-zone-overlay'),
     loadingOverlay: document.getElementById('loading-overlay'),
-    
-    addModal: document.getElementById('add-modal'),
-    btnAddModal: document.getElementById('btn-add-modal'),
-    closeAddModalBtn: document.querySelector('.close-add-modal'),
-    addMovieForm: document.getElementById('add-movie-form'),
     
     cart: document.getElementById('floating-cart'),
     cartCount: document.getElementById('cart-count'),
@@ -220,14 +226,6 @@ const DOM = {
     selectedMoviesList: document.getElementById('selected-movies-list'),
     modalCartCount: document.getElementById('modal-cart-count'),
     btnDeselectAllModal: document.getElementById('btn-deselect-all-modal'),
-    
-    btnExportDb: document.getElementById('btn-export-db'),
-    btnClearDb: document.getElementById('btn-clear-db'),
-    
-    editModal: document.getElementById('edit-modal'),
-    closeEditModalBtn: document.querySelector('.close-edit-modal'),
-    editMovieForm: document.getElementById('edit-movie-form'),
-    btnDeleteMovie: document.getElementById('btn-delete-movie'),
     
     toastContainer: document.getElementById('toast-container')
 };
@@ -301,6 +299,7 @@ async function renderMovies(loadMore = false) {
     }
 
     // Cargar datos de la API
+    let newMoviesCount = 0;
     if (apiFunction && (AppState.hasMorePages || !loadMore) && !AppState.isLoadingMore) {
         AppState.isLoadingMore = true;
         
@@ -311,15 +310,20 @@ async function renderMovies(loadMore = false) {
             const existingIds = new Set(AppState.tmdbMovies.map(m => m.id));
             const newMovies = result.movies.filter(m => !existingIds.has(m.id));
             
+            console.log(`Películas recibidas: ${result.movies.length}, Películas nuevas: ${newMovies.length}`);
+            
             if (newMovies.length > 0) {
+                const previousLength = AppState.tmdbMovies.length;
                 AppState.tmdbMovies.push(...newMovies);
-                console.log(`Añadidas ${newMovies.length} películas nuevas. Total: ${AppState.tmdbMovies.length}`);
+                newMoviesCount = AppState.tmdbMovies.length - previousLength;
+                console.log(`Añadidas ${newMoviesCount} películas nuevas. Total: ${AppState.tmdbMovies.length}`);
             } else {
-                console.log('No se encontraron películas nuevas en esta página');
+                console.log('No se encontraron películas nuevas en esta página - deteniendo carga');
                 AppState.hasMorePages = false; // No hay más películas únicas
             }
         } else {
             AppState.tmdbMovies = result.movies;
+            console.log(`Carga inicial: ${result.movies.length} películas`);
         }
         
         AppState.totalPages = result.totalPages;
@@ -327,7 +331,7 @@ async function renderMovies(loadMore = false) {
         AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
         AppState.isLoadingMore = false;
         
-        console.log(`Cargada página ${AppState.currentPage - 1} de ${AppState.totalPages}. Total películas: ${AppState.tmdbMovies.length}`);
+        console.log(`Estado: Página ${AppState.currentPage - 1}/${AppState.totalPages}, Total películas: ${AppState.tmdbMovies.length}, Hay más: ${AppState.hasMorePages}`);
     }
 
     let moviesToRender = AppState.tmdbMovies;
@@ -364,8 +368,21 @@ async function renderMovies(loadMore = false) {
         }
         
         // Solo renderizar las nuevas películas si es carga incremental
-        const moviesToRenderCards = loadMore ? 
-            moviesToRender.slice(AppState.tmdbMovies.length - moviesToRender.length) : moviesToRender;
+        let moviesToRenderCards;
+        if (loadMore && newMoviesCount > 0) {
+            // Solo renderizar las películas que se acabaron de añadir
+            moviesToRenderCards = moviesToRender.slice(-newMoviesCount);
+            console.log(`Renderizando solo ${moviesToRenderCards.length} películas nuevas`);
+        } else {
+            moviesToRenderCards = moviesToRender;
+            console.log(`Renderizando todas ${moviesToRenderCards.length} películas`);
+        }
+        
+        // Verificar que hay películas para renderizar
+        if (!moviesToRenderCards || moviesToRenderCards.length === 0) {
+            console.log('No hay películas para renderizar');
+            return;
+        }
         
         const fragment = document.createDocumentFragment();
 
@@ -441,6 +458,11 @@ function renderSelectedList() {
     
     const selectedList = AppState.tmdbMovies.filter(m => AppState.selectedMovies.has(m.id));
     
+    if (selectedList.length === 0) {
+        DOM.selectedMoviesList.innerHTML = '<li style="justify-content: center; color: var(--text-muted);" role="listitem">No hay películas seleccionadas</li>';
+        return;
+    }
+    
     selectedList.forEach((movie, index) => {
         const li = document.createElement('li');
         li.setAttribute('role', 'listitem');
@@ -451,14 +473,18 @@ function renderSelectedList() {
             <button class="remove-item" title="Quitar ${safeTitle}" aria-label="Quitar ${safeTitle} de la lista"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
         `;
         
-        li.querySelector('.remove-item').addEventListener('click', async () => {
-            AppState.selectedMovies.delete(movie.id);
-            const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
-            if (card) {
-                card.classList.remove('selected');
-            }
-            await renderMovies();
-        });
+        const removeBtn = li.querySelector('.remove-item');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', async () => {
+                AppState.selectedMovies.delete(movie.id);
+                const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
+                if (card) {
+                    card.classList.remove('selected');
+                }
+                renderSelectedList(); // Actualizar el modal sin recargar todo
+                updateCartUI();
+            });
+        }
         
         DOM.selectedMoviesList.appendChild(li);
     });
@@ -473,24 +499,39 @@ function toggleSelection(id, cardElement) {
         return;
     }
     
-    if (AppState.selectedMovies.has(id)) {
-        AppState.selectedMovies.delete(id);
-        cardElement.classList.remove('selected');
-        cardElement.setAttribute('aria-label', cardElement.getAttribute('aria-label').replace(' (seleccionada)', ''));
-    } else {
-        AppState.selectedMovies.add(id);
-        cardElement.classList.add('selected');
-        cardElement.setAttribute('aria-label', cardElement.getAttribute('aria-label') + ' (seleccionada)');
-        
-        // Animación Pulse en el badge del carrito
-        const badge = document.querySelector('.cart-badge');
-        if (badge) {
-            badge.classList.remove('pulse');
-            void badge.offsetWidth; // trigger reflow for animation restart
-            badge.classList.add('pulse');
-        }
+    if (!id) {
+        console.error('toggleSelection: id es undefined');
+        return;
     }
-    updateCartUI();
+    
+    try {
+        if (AppState.selectedMovies.has(id)) {
+            AppState.selectedMovies.delete(id);
+            cardElement.classList.remove('selected');
+            const currentLabel = cardElement.getAttribute('aria-label');
+            if (currentLabel) {
+                cardElement.setAttribute('aria-label', currentLabel.replace(' (seleccionada)', ''));
+            }
+        } else {
+            AppState.selectedMovies.add(id);
+            cardElement.classList.add('selected');
+            const currentLabel = cardElement.getAttribute('aria-label');
+            if (currentLabel) {
+                cardElement.setAttribute('aria-label', currentLabel + ' (seleccionada)');
+            }
+            
+            // Animación Pulse en el badge del carrito
+            const badge = document.querySelector('.cart-badge');
+            if (badge) {
+                badge.classList.remove('pulse');
+                void badge.offsetWidth; // trigger reflow for animation restart
+                badge.classList.add('pulse');
+            }
+        }
+        updateCartUI();
+    } catch (error) {
+        console.error('Error en toggleSelection:', error);
+    }
 }
 
 function updateCartUI() {
@@ -514,8 +555,14 @@ function updateCartUI() {
 
 function getSelectedMoviesText() {
     const selectedList = AppState.tmdbMovies.filter(m => AppState.selectedMovies.has(m.id));
+    if (selectedList.length === 0) return '';
+    
     let text = '';
-    selectedList.forEach((movie, index) => text += `${index + 1}. ${movie.title}\n`);
+    selectedList.forEach((movie, index) => {
+        if (movie && movie.title) {
+            text += `${index + 1}. ${movie.title}\n`;
+        }
+    });
     return text;
 }
 
@@ -678,9 +725,12 @@ function setupEventListeners() {
         DOM.btnDeselectAllModal.addEventListener('click', async () => { 
             AppState.selectedMovies.clear();
             document.querySelectorAll('.movie-card.selected').forEach(card => {
-                card.classList.remove('selected');
+                if (card) {
+                    card.classList.remove('selected');
+                }
             });
-            await renderMovies(); 
+            renderSelectedList(); // Actualizar modal sin recargar
+            updateCartUI();
             closeModal(DOM.selectionModal);
             showToast('Películas deseleccionadas', 'info');
         });
@@ -726,7 +776,7 @@ function setupEventListeners() {
         }
         
         const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight - 500; // Cargar 500px antes del final
+        const threshold = document.body.offsetHeight - 600; // Cargar 600px antes del final
         
         console.log('Scroll check:', {
             scrollPosition,
@@ -741,5 +791,5 @@ function setupEventListeners() {
             console.log('Cargando más películas...');
             await renderMovies(true); // true = loadMore mode
         }
-    }, 200));
+    }, 300));
 }
