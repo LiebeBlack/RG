@@ -139,7 +139,22 @@
                     <!-- Lista de peliculas renderizadas por JS -->
                 </ul>
                 <div class="modal-footer">
-                    <button id="btn-deselect-all-modal" class="btn btn-ghost w-100">Limpiar Todo</button>
+                    <!-- Botón limpiar eliminado -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Synopsis (Long Press) -->
+    <div id="synopsis-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="synopsis-modal-title">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="synopsis-modal-title">Sinopsis</h2>
+                <button class="close-synopsis-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="synopsis-content" class="synopsis-content">
+                    <!-- Contenido del synopsis -->
                 </div>
             </div>
         </div>
