@@ -253,9 +253,7 @@ const DOM = {
     synopsisModal: document.getElementById('synopsis-modal'),
     closeSynopsisModalBtn: document.querySelector('.close-synopsis-modal'),
     synopsisContent: document.getElementById('synopsis-content'),
-    synopsisModalTitle: document.getElementById('synopsis-modal-title'),
-    
-    toastContainer: document.getElementById('toast-container')
+    synopsisModalTitle: document.getElementById('synopsis-modal-title')
 };
 
 /**
@@ -263,23 +261,39 @@ const DOM = {
  */
 document.addEventListener('DOMContentLoaded', async () => {
     showLoading(true);
-    
+
+    // Prevenir menú contextual globalmente (excepto en carátulas)
+    document.addEventListener('contextmenu', (e) => {
+        // Permitir click derecho solo en carátulas
+        if (!e.target.closest('.movie-card')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+
+    // Prevenir doble click globalmente
+    document.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+
     try {
         setupEventListeners();
-        
+
         // Cargar películas iniciales
         await loadTMDBMovies();
-        
+
         // Renderizar películas
         await renderMovies();
-        
+
         // Ocultar loading
         showLoading(false);
-        
+
     } catch (error) {
         console.error('Error durante la inicialización:', error);
         showLoading(false);
-        showToast('Error al cargar el catálogo', 'error');
     }
 });
 
@@ -551,30 +565,30 @@ async function renderMovies(loadMore = false) {
  */
 function renderSelectedList() {
     if (!DOM.selectedMoviesList) return;
+
+    // Siempre limpiar completamente antes de renderizar
     DOM.selectedMoviesList.innerHTML = '';
-    
+
     if (AppState.selectedMovies.size === 0) {
         DOM.selectedMoviesList.innerHTML = '<li style="justify-content: center; color: var(--text-muted);" role="listitem">No hay películas seleccionadas</li>';
         return;
     }
-    
+
     const selectedList = AppState.tmdbMovies.filter(m => AppState.selectedMovies.has(m.id));
-    
+
     if (selectedList.length === 0) {
         DOM.selectedMoviesList.innerHTML = '<li style="justify-content: center; color: var(--text-muted);" role="listitem">No hay películas seleccionadas</li>';
         return;
     }
-    
-    const isMobile = window.innerWidth <= 650;
-    
-    selectedList.forEach((movie, index) => {
+
+    // Sin animaciones para evitar fugas de memoria
+    selectedList.forEach((movie) => {
         const li = document.createElement('li');
         li.setAttribute('role', 'listitem');
-        li.style.animationDelay = `${index * 0.05}s`;
-        
+
         const safeTitle = escapeHtml(movie.title);
         const safeSynopsis = movie.overview ? escapeHtml(movie.overview) : 'Sin descripción disponible';
-        
+
         // Synopsis siempre visible en móvil y desktop
         li.innerHTML = `
             <div class="selected-movie-info">
@@ -583,7 +597,7 @@ function renderSelectedList() {
             </div>
             <button class="remove-item" title="Quitar ${safeTitle}" aria-label="Quitar ${safeTitle} de la lista"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
         `;
-        
+
         const removeBtn = li.querySelector('.remove-item');
         if (removeBtn) {
             removeBtn.addEventListener('click', async () => {
@@ -591,30 +605,31 @@ function renderSelectedList() {
                 const card = document.querySelector(`.movie-card[data-id="${movie.id}"]`);
                 if (card) {
                     card.classList.remove('selected');
-                    
+
                     // Ocultar el badge de selección
                     const badge = card.querySelector('.select-badge');
                     if (badge) {
                         badge.style.opacity = '0';
                         badge.style.transform = 'scale(0.7)';
                     }
-                    
+
                     // Limpiar completamente el aria-label
                     const currentLabel = card.getAttribute('aria-label');
                     if (currentLabel) {
                         const cleanLabel = currentLabel.replace(' (seleccionada)', '').trim();
                         card.setAttribute('aria-label', cleanLabel);
                     }
-                    
+
                     // Forzar limpieza de estilos inline
                     card.style.transform = '';
                     card.style.transition = '';
                 }
-                renderSelectedList(); // Actualizar el modal sin recargar todo
+                // Volver a renderizar la lista
+                renderSelectedList();
                 updateCartUI();
             });
         }
-        
+
         DOM.selectedMoviesList.appendChild(li);
     });
 }
@@ -657,17 +672,8 @@ function toggleSelection(id, cardElement) {
             // Forzar limpieza de estilos inline
             cardElement.style.transform = '';
             cardElement.style.transition = '';
-            
-            // Animación de deselección solo en desktop
-            if (!isMobile) {
-                cardElement.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    cardElement.style.transform = '';
-                    cardElement.style.transition = '';
-                }, 150);
-            }
-            
-            showToast('Película eliminada de la selección', 'info');
+
+            // Sin animaciones para evitar fugas de memoria
         } else {
             AppState.selectedMovies.add(id);
             cardElement.classList.add('selected');
@@ -675,27 +681,8 @@ function toggleSelection(id, cardElement) {
             if (currentLabel) {
                 cardElement.setAttribute('aria-label', currentLabel + ' (seleccionada)');
             }
-            
-            // Animación de selección solo en desktop
-            if (!isMobile) {
-                cardElement.style.transform = 'scale(1.08)';
-                setTimeout(() => {
-                    cardElement.style.transform = '';
-                    cardElement.style.transition = '';
-                }, 200);
-            }
-            
-            showToast('Película añadida a la selección', 'success');
-            
-            // Animación Pulse en el badge del carrito solo en desktop
-            if (!isMobile) {
-                const badge = document.querySelector('.cart-badge');
-                if (badge) {
-                    badge.classList.remove('pulse');
-                    void badge.offsetWidth; // trigger reflow for animation restart
-                    badge.classList.add('pulse');
-                }
-            }
+
+            // Sin animaciones para evitar fugas de memoria
         }
         updateCartUI();
     } catch (error) {
@@ -707,7 +694,7 @@ function updateCartUI() {
     const count = AppState.selectedMovies.size;
     if (DOM.cartCount) DOM.cartCount.textContent = count;
     if (DOM.modalCartCount) DOM.modalCartCount.textContent = count;
-    
+
     if (DOM.cart) {
         if (count > 0) {
             DOM.cart.classList.remove('hide-dock');
@@ -715,7 +702,7 @@ function updateCartUI() {
             DOM.cart.style.visibility = 'visible';
             DOM.cart.style.opacity = '1';
             DOM.cart.style.pointerEvents = 'auto';
-            
+
             // En móvil, resetear transform
             if (window.innerWidth <= 900) {
                 DOM.cart.style.transform = 'none';
@@ -726,8 +713,8 @@ function updateCartUI() {
             DOM.cart.classList.add('hide-dock');
         }
     }
-    
-    // Si el modal de selección está abierto, mantenlo actualizado en tiempo real
+
+    // Si el modal de selección está abierto, actualizarlo en tiempo real
     if (DOM.selectionModal && !DOM.selectionModal.classList.contains('hidden')) {
         renderSelectedList();
     }
@@ -801,6 +788,10 @@ function setupLongPress(card, movie) {
         longPressTriggered = false;
         longPressTimer = setTimeout(() => {
             longPressTriggered = true;
+            // Vibración en móviles para feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
             showSynopsisModal(movie);
         }, LONG_PRESS_DURATION);
     }, { passive: true });
@@ -813,55 +804,79 @@ function setupLongPress(card, movie) {
     
     // Touch cancel - cancelar timer
     card.addEventListener('touchcancel', cancelTimer);
-    
+
+    // Click derecho para mostrar synopsis
+    card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showSynopsisModal(movie);
+        return false;
+    });
+
     // Mouse events para desktop (solo si no es móvil)
     if (window.innerWidth > 650) {
         card.addEventListener('mousedown', (e) => {
-            longPressTriggered = false;
-            longPressTimer = setTimeout(() => {
-                longPressTriggered = true;
-                showSynopsisModal(movie);
-            }, LONG_PRESS_DURATION);
+            // Solo si no es click derecho
+            if (e.button !== 2) {
+                longPressTriggered = false;
+                longPressTimer = setTimeout(() => {
+                    longPressTriggered = true;
+                    showSynopsisModal(movie);
+                }, LONG_PRESS_DURATION);
+            }
         });
-        
+
         card.addEventListener('mouseup', cancelTimer);
         card.addEventListener('mouseleave', cancelTimer);
     }
 }
 
 /**
- * Toast Notifications
+ * Notificación centrada temporal
+ */
+function showNotification(message) {
+    // Eliminar notificación existente si hay
+    const existingNotification = document.querySelector('.notification-center');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    const notification = document.createElement('div');
+    notification.className = 'notification-center';
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(139, 92, 246, 0.95);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        backdrop-filter: blur(10px);
+    `;
+
+    document.body.appendChild(notification);
+
+    // Eliminar después de 2 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 2000);
+}
+
+/**
+ * Toast Notifications - Eliminadas para rendimiento
  */
 function showToast(message, type = 'info') {
-    if (!DOM.toastContainer) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.setAttribute('role', 'alert');
-    const icons = {
-        success: 'fa-circle-check',
-        error: 'fa-circle-xmark',
-        info: 'fa-circle-info'
-    };
-    const icon = icons[type] || icons.info;
-    toast.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i> <span>${escapeHtml(message)}</span>`;
-    DOM.toastContainer.appendChild(toast);
-    
-    const autoRemoveTimeout = setTimeout(() => {
-        toast.style.animation = 'fadeOut 0.4s ease forwards';
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 450);
-    }, 4000);
-    
-    // Allow click to dismiss early
-    toast.addEventListener('click', () => {
-        clearTimeout(autoRemoveTimeout);
-        toast.style.animation = 'fadeOut 0.3s ease forwards';
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 350);
-    });
-    toast.style.cursor = 'pointer';
+    // No-op: notificaciones eliminadas para ahorrar recursos
+    return;
 }
 
 /**
@@ -871,10 +886,10 @@ function openModal(modalElement) {
     if (!modalElement) return;
     modalElement.classList.remove('hidden');
     document.body.classList.add('modal-open');
-    // Focus the first focusable element inside the modal
+    // Focus the first focusable element inside the modal (sin setTimeout para evitar fugas)
     const firstFocusable = modalElement.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (firstFocusable) {
-        setTimeout(() => firstFocusable.focus(), 100);
+        firstFocusable.focus();
     }
 }
 
@@ -970,15 +985,33 @@ function setupEventListeners() {
     // AMBAS VISTAS: Carrito de selección
     // ═══════════════════════════════════════════
     if (DOM.btnViewList) {
-        const openSelectionModal = () => {
+        const openSelectionModal = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            // Limpiar lista antes de renderizar
+            if (DOM.selectedMoviesList) {
+                DOM.selectedMoviesList.innerHTML = '';
+            }
             renderSelectedList();
             openModal(DOM.selectionModal);
         };
+
+        // Click normal
         DOM.btnViewList.addEventListener('click', openSelectionModal);
+
+        // Touch para móviles
+        DOM.btnViewList.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            openSelectionModal(e);
+        });
+
+        // Keyboard
         DOM.btnViewList.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                openSelectionModal();
+                openSelectionModal(e);
             }
         });
     }
@@ -1021,16 +1054,15 @@ function setupEventListeners() {
         DOM.btnCopyList.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             if (AppState.selectedMovies.size === 0) {
-                showToast('No hay películas seleccionadas', 'info');
                 return;
             }
-            
+
             try {
                 const textToCopy = getSelectedMoviesText();
                 await navigator.clipboard.writeText(textToCopy);
-                showToast('¡Lista copiada al portapapeles!', 'success');
+                showNotification('¡Películas copiadas exitosamente!');
             } catch (err) {
                 // Fallback para navegadores que no soportan clipboard API
                 try {
@@ -1043,10 +1075,9 @@ function setupEventListeners() {
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    showToast('¡Lista copiada al portapapeles!', 'success');
+                    showNotification('¡Películas copiadas exitosamente!');
                 } catch (fallbackErr) {
                     console.error('Error al copiar:', fallbackErr);
-                    showToast('Error al copiar al portapapeles', 'error');
                 }
             }
         });
@@ -1083,39 +1114,38 @@ function setupEventListeners() {
                 renderSelectedList();
                 updateCartUI();
                 closeModal(DOM.selectionModal);
-                showToast('Películas deseleccionadas', 'info');
             } catch (error) {
                 console.error('Error al limpiar selección:', error);
-                showToast('Error al limpiar selección', 'error');
             }
         });
     }
 
-    // Infinite Scroll para cargar más películas
+    // Infinite Scroll optimizado para evitar fugas de memoria
     let scrollTimeout = null;
     let lastScrollPosition = 0;
-    
-    window.addEventListener('scroll', () => {
+    let scrollListenerAdded = false;
+
+    const handleScroll = () => {
         if (AppState.isLoadingMore || !AppState.hasMorePages) {
             return;
         }
-        
+
         const currentScrollPosition = window.scrollY;
-        
+
         // Solo procesar si estamos haciendo scroll hacia abajo
         if (currentScrollPosition <= lastScrollPosition) {
             lastScrollPosition = currentScrollPosition;
             return;
         }
-        
+
         lastScrollPosition = currentScrollPosition;
-        
+
         if (scrollTimeout) clearTimeout(scrollTimeout);
-        
+
         scrollTimeout = setTimeout(async () => {
             const scrollPosition = window.innerHeight + window.scrollY;
             const threshold = document.body.offsetHeight - 800;
-            
+
             if (scrollPosition >= threshold) {
                 try {
                     await renderMovies(true);
@@ -1124,5 +1154,11 @@ function setupEventListeners() {
                 }
             }
         }, 100);
-    });
+    };
+
+    // Agregar listener solo una vez
+    if (!scrollListenerAdded) {
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        scrollListenerAdded = true;
+    }
 }
