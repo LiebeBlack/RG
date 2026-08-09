@@ -8,7 +8,25 @@
 // TMDB API Configuration
 const TMDB_API_KEY = "b00622de54cd7522d4640d5e5c527936";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+// Detectar dispositivo móvil para usar imágenes de menor calidad
+const isMobile = window.innerWidth <= 650;
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
+
+// Global IntersectionObserver para imágenes diferidas y evitar fugas de memoria
+const globalImageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.onload = () => { img.style.opacity = '1'; };
+            img.onerror = () => {
+                img.src = AppState.defaultPlaceholder;
+                img.style.opacity = '1';
+            };
+            observer.unobserve(img);
+        }
+    });
+}, { rootMargin: '50px' });
 
 // Estado global de la aplicación
 const AppState = {
@@ -234,11 +252,10 @@ const DOM = {
     searchInput: document.getElementById('search-input'),
     categoryFilter: document.getElementById('category-filter'),
     sortFilter: document.getElementById('sort-filter'),
-    languageFilter: document.getElementById('language-filter'),
     totalCount: document.getElementById('total-count-number'),
     loadingOverlay: document.getElementById('loading-overlay'),
     loadingText: document.getElementById('loading-text'),
-    
+
     cart: document.getElementById('floating-cart'),
     cartCount: document.getElementById('cart-count'),
     btnViewList: document.getElementById('btn-view-list'),
@@ -407,6 +424,7 @@ async function renderMovies(loadMore = false) {
     
     // Solo limpiar si no es carga incremental
     if (!loadMore) {
+        if (typeof globalImageObserver !== 'undefined') globalImageObserver.disconnect();
         DOM.grid.innerHTML = '';
     }
 
@@ -472,15 +490,10 @@ async function renderMovies(loadMore = false) {
             const safeOriginalTitle = movie.originalTitle && movie.originalTitle !== movie.title ? escapeHtml(movie.originalTitle) : '';
             const safeCategory = escapeHtml(movie.category || 'Otro');
 
-            // Usar la variable isMobile ya declarada arriba
-            const optimizedImgSrc = isMobile && imgSrc.includes('tmdb.org') 
-                ? imgSrc.replace('/w500/', '/w342/') 
-                : imgSrc;
+            const optimizedImgSrc = imgSrc;
 
-            // Mostrar título original si es diferente al título en el idioma actual
-            const titleHTML = safeOriginalTitle ?
-                `<h3 class="card-title">${safeTitle}</h3><p class="card-original-title">${safeOriginalTitle}</p>` :
-                `<h3 class="card-title">${safeTitle}</h3>`;
+            // Solo mostrar título en español, sin subtítulo en inglés
+            const titleHTML = `<h3 class="card-title">${safeTitle}</h3>`;
 
             card.innerHTML = `
                 <div class="select-badge" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
@@ -510,6 +523,11 @@ async function renderMovies(loadMore = false) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (card && !longPressTriggered) {
+                    // Prevenir doble click rápido
+                    if (card.dataset.lastClick && Date.now() - parseInt(card.dataset.lastClick) < 300) {
+                        return;
+                    }
+                    card.dataset.lastClick = Date.now().toString();
                     toggleSelection(movie.id, card);
                 }
                 longPressTriggered = false;
@@ -536,25 +554,7 @@ async function renderMovies(loadMore = false) {
         const allImages = DOM.grid.querySelectorAll('.card-img[data-src]');
         allImages.forEach(img => {
             if (img.dataset.src && img.src !== img.dataset.src) {
-                // Usar Intersection Observer para carga diferida
-                const imgObserver = new IntersectionObserver((entries, observer) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-                            img.src = img.dataset.src;
-                            img.onload = () => {
-                                img.style.opacity = '1';
-                            };
-                            img.onerror = () => {
-                                img.src = AppState.defaultPlaceholder;
-                                img.style.opacity = '1';
-                            };
-                            observer.unobserve(img);
-                        }
-                    });
-                }, { rootMargin: '50px' });
-                
-                imgObserver.observe(img);
+                globalImageObserver.observe(img);
             }
         });
     }
@@ -641,40 +641,45 @@ function toggleSelection(id, cardElement) {
     if (!cardElement || !id) {
         return;
     }
-    
+
     try {
         const isSelected = AppState.selectedMovies.has(id);
         const isMobile = window.innerWidth <= 650;
-        
+
         // Solo animaciones en desktop, no en móvil
         if (!isMobile) {
             cardElement.style.transition = 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)';
         }
-        
+
         if (isSelected) {
             AppState.selectedMovies.delete(id);
             cardElement.classList.remove('selected');
-            
+
             // Ocultar el badge de selección
             const badge = cardElement.querySelector('.select-badge');
             if (badge) {
                 badge.style.opacity = '0';
                 badge.style.transform = 'scale(0.7)';
             }
-            
+
             // Limpiar completamente el aria-label
             const currentLabel = cardElement.getAttribute('aria-label');
             if (currentLabel) {
                 const cleanLabel = currentLabel.replace(' (seleccionada)', '').trim();
                 cardElement.setAttribute('aria-label', cleanLabel);
             }
-            
+
             // Forzar limpieza de estilos inline
             cardElement.style.transform = '';
             cardElement.style.transition = '';
 
             // Sin animaciones para evitar fugas de memoria
         } else {
+            // Prevenir selección múltiple accidental
+            if (AppState.selectedMovies.has(id)) {
+                return; // Ya está seleccionado, no hacer nada
+            }
+
             AppState.selectedMovies.add(id);
             cardElement.classList.add('selected');
             const currentLabel = cardElement.getAttribute('aria-label');
@@ -710,7 +715,12 @@ function updateCartUI() {
                 DOM.cart.style.transform = 'translateX(-50%) translateY(0)';
             }
         } else {
+            // Ocultar carrito cuando no hay selecciones
             DOM.cart.classList.add('hide-dock');
+            DOM.cart.style.display = 'none';
+            DOM.cart.style.visibility = 'hidden';
+            DOM.cart.style.opacity = '0';
+            DOM.cart.style.pointerEvents = 'none';
         }
     }
 
@@ -971,12 +981,9 @@ function setupEventListeners() {
     if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedRender);
     if (DOM.categoryFilter) DOM.categoryFilter.addEventListener('change', async () => await renderMovies());
     if (DOM.sortFilter) DOM.sortFilter.addEventListener('change', async () => await renderMovies());
-    if (DOM.languageFilter) {
-        DOM.languageFilter.addEventListener('change', async (e) => {
-            AppState.searchLanguage = e.target.value;
-            await renderMovies();
-        });
-    }
+
+    // Idioma fijo en español
+    AppState.searchLanguage = 'es';
 
 
 

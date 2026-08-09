@@ -14,18 +14,18 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
+    <!-- Google Fonts - Optimizado para rendimiento -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay" role="status" aria-label="Cargando">
-        <div class="spinner"><i class="fa-solid fa-film fa-spin" aria-hidden="true"></i></div>
-        <p id="loading-text">Cargando catálogo...</p>
+        <div class="spinner"><i class="fa-solid fa-film" aria-hidden="true"></i></div>
+        <p id="loading-text">Cargando películas...</p>
     </div>
 
     <!-- Barra de Navegación -->
@@ -38,9 +38,8 @@
                 </div>
             </a>
 
-            <a href="./about.html" class="nav-link" aria-label="Información sobre el creador">
+            <a href="./about.html" class="nav-link nav-link-compact" aria-label="Información sobre el creador">
                 <i class="fa-solid fa-info-circle"></i>
-                <span>Acerca de</span>
             </a>
 
             <div class="search-bar">
@@ -74,10 +73,6 @@
                     <option value="recent">Recientes</option>
                     <option value="az">A-Z</option>
                     <option value="za">Z-A</option>
-                </select>
-                <select id="language-filter" class="filter-select-compact" aria-label="Idioma de búsqueda">
-                    <option value="es">ES</option>
-                    <option value="en">EN</option>
                 </select>
             </div>
 
@@ -113,15 +108,15 @@
     </footer>
 
     <!-- Carrito Flotante (Dock) -->
-    <div id="floating-cart" class="floating-cart hide-dock" role="complementary" aria-label="Películas seleccionadas">
-        <div class="cart-info cursor-pointer" id="btn-view-list" title="Revisar lista seleccionada" tabindex="0" role="button" aria-label="Ver lista de películas seleccionadas">
+    <div id="floating-cart" class="floating-cart hide-dock" role="complementary" aria-label="Mis películas">
+        <div class="cart-info cursor-pointer" id="btn-view-list" title="Ver mis películas" tabindex="0" role="button" aria-label="Ver mis películas seleccionadas">
             <div class="cart-badge"><span id="cart-count">0</span></div>
-            <span class="cart-label">Películas seleccionadas</span>
+            <span class="cart-label">Mis películas</span>
             <i class="fa-solid fa-chevron-up toggle-icon" aria-hidden="true"></i>
         </div>
         <div class="cart-separator" aria-hidden="true"></div>
         <div class="cart-actions">
-            <button id="btn-copy-list" class="btn btn-secondary" title="Copiar lista al portapapeles" aria-label="Copiar lista al portapapeles">
+            <button id="btn-copy-list" class="btn btn-secondary" title="Copiar lista" aria-label="Copiar lista">
                 <i class="fa-regular fa-copy" aria-hidden="true"></i> <span>Copiar</span>
             </button>
         </div>
@@ -131,7 +126,7 @@
     <div id="selection-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="selection-modal-title">
         <div class="modal-content glass-panel modal-lg">
             <div class="modal-header">
-                <h2 id="selection-modal-title">Películas seleccionadas (<span id="modal-cart-count">0</span>)</h2>
+                <h2 id="selection-modal-title">Mis películas (<span id="modal-cart-count">0</span>)</h2>
                 <button class="close-selection-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
