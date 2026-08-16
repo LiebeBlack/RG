@@ -2,159 +2,235 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ky! Movies — Tu catálogo de películas favorito. Busca, elige y comparte tus películas por WhatsApp.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Ky! Movies — Tu catálogo interactivo y ultraligero de películas. Busca, selecciona y comparte por WhatsApp.">
     <meta name="robots" content="index, follow">
-    <meta property="og:title" content="Ky! Movies">
-    <meta property="og:description" content="Descubre y comparte tu catálogo de películas. Interfaz sencilla con búsqueda, filtros y envío por WhatsApp.">
+    <meta property="og:title" content="Ky! Movies — Catálogo de Películas">
+    <meta property="og:description" content="Explora y comparte películas con carátulas optimizadas, búsqueda instantánea y cero consumo excesivo de datos.">
     <meta property="og:type" content="website">
-    <meta name="theme-color" content="#0a0a0a">
-    <title>Ky! Movies</title>
+    <meta name="theme-color" content="#090705">
+    <title>Ky! Movies — Catálogo de Películas</title>
+    <!-- Preconnect y DNS-Prefetch para optimización extrema de LCP y CWV -->
+    <link rel="preconnect" href="https://api.themoviedb.org">
+    <link rel="dns-prefetch" href="https://api.themoviedb.org">
+    <link rel="preconnect" href="https://image.tmdb.org">
+    <link rel="dns-prefetch" href="https://image.tmdb.org">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Favicon SVG inline -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts - Optimizado para rendimiento -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts Ultra-HD Crisp, Thin & Clean -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay" role="status" aria-label="Cargando">
-        <div class="spinner"><i class="fa-solid fa-film" aria-hidden="true"></i></div>
-        <p id="loading-text">Cargando películas...</p>
+    <!-- Loading Inicial Ultraligero -->
+    <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite">
+        <div class="spinner">
+            <i class="fa-solid fa-film" aria-hidden="true"></i>
+        </div>
+        <p id="loading-text">Cargando catálogo...</p>
     </div>
 
-    <!-- Barra de Navegación -->
+    <!-- Barra de Navegación Fija & Adaptativa -->
     <header class="glass-nav" role="banner">
         <div class="nav-container">
-            <a href="./index.html" class="logo" aria-label="Ky! Movies - Inicio">
-                <div class="logo-content">
-                    <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
-                    <h1 class="gradient-text">Ky! Movies</h1>
+            <div class="nav-top-row">
+                <a href="./index.html" class="logo" aria-label="Ky! Movies - Inicio">
+                    <div class="logo-content">
+                        <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
+                        <span class="logo-text gradient-text">Ky! Movies</span>
+                    </div>
+                </a>
+
+                <div class="nav-actions-top">
+                    <div class="nav-stats" id="nav-stats" aria-live="polite" title="Películas disponibles">
+                        <span id="total-count" class="stat-pill">
+                            <i class="fa-solid fa-film" aria-hidden="true"></i>
+                            <span id="total-count-number">0</span>
+                        </span>
+                    </div>
+
+                    <a href="./about.html" class="nav-link" aria-label="Acerca de Ky! Movies" title="Información y ayuda">
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <span class="nav-link-text">Acerca de</span>
+                    </a>
                 </div>
-            </a>
-
-            <a href="./about.html" class="nav-link nav-link-compact" aria-label="Información sobre el creador">
-                <i class="fa-solid fa-info-circle"></i>
-            </a>
-
-            <div class="search-bar">
-                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="search-input" placeholder="Buscar..." autocomplete="off" aria-label="Buscar películas" formnovalidate>
             </div>
 
-            <div class="filter-inline">
-                <select id="category-filter" class="filter-select-compact" aria-label="Filtrar por categoría">
-                    <option value="all">Todas</option>
-                    <option value="Acción">Acción</option>
-                    <option value="Aventura">Aventura</option>
-                    <option value="Animación">Animación</option>
-                    <option value="Comedia">Comedia</option>
-                    <option value="Crimen">Crimen</option>
-                    <option value="Documental">Documental</option>
-                    <option value="Drama">Drama</option>
-                    <option value="Familia">Familia</option>
-                    <option value="Fantasía">Fantasía</option>
-                    <option value="Historia">Historia</option>
-                    <option value="Terror">Terror</option>
-                    <option value="Música">Música</option>
-                    <option value="Misterio">Misterio</option>
-                    <option value="Romance">Romance</option>
-                    <option value="Sci-Fi">Sci-Fi</option>
-                    <option value="Thriller">Thriller</option>
-                    <option value="Bélico">Bélico</option>
-                    <option value="Western">Western</option>
-                </select>
-                <select id="sort-filter" class="filter-select-compact" aria-label="Ordenar por">
-                    <option value="recent">Recientes</option>
-                    <option value="az">A-Z</option>
-                    <option value="za">Z-A</option>
-                </select>
-            </div>
+            <div class="nav-controls-row">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input type="search" id="search-input" placeholder="Buscar por título..." autocomplete="off" aria-label="Buscar películas">
+                    <button id="btn-clear-search" class="clear-search-btn hidden" aria-label="Limpiar búsqueda" type="button">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
 
-            <div class="nav-stats" id="nav-stats" aria-live="polite">
-                <span id="total-count" class="stat-pill">
-                    <i class="fa-solid fa-film" aria-hidden="true"></i>
-                    <span id="total-count-number">0</span>
-                </span>
+                <div class="filter-controls">
+                    <div class="select-wrapper">
+                        <select id="category-filter" class="filter-select" aria-label="Filtrar por género">
+                            <option value="all">Todos los géneros</option>
+                            <option value="Acción">Acción</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Animación">Animación</option>
+                            <option value="Comedia">Comedia</option>
+                            <option value="Crimen">Crimen</option>
+                            <option value="Documental">Documental</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Familia">Familia</option>
+                            <option value="Fantasía">Fantasía</option>
+                            <option value="Historia">Historia</option>
+                            <option value="Terror">Terror</option>
+                            <option value="Música">Música</option>
+                            <option value="Misterio">Misterio</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Sci-Fi">Sci-Fi</option>
+                            <option value="Thriller">Thriller</option>
+                            <option value="Bélico">Bélico</option>
+                            <option value="Western">Western</option>
+                        </select>
+                    </div>
+
+                    <div class="select-wrapper">
+                        <select id="sort-filter" class="filter-select" aria-label="Ordenar catálogo">
+                            <option value="recent">Más recientes</option>
+                            <option value="popular">Más populares</option>
+                            <option value="rating">Mejor valoradas</option>
+                            <option value="az">A - Z</option>
+                            <option value="za">Z - A</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Contenido Principal -->
+    <!-- Contenedor Principal con Rendimiento Acelerado -->
     <main class="container" role="main">
+        <!-- Estado Vacío -->
         <div id="empty-state" class="empty-state hidden" aria-hidden="true">
             <div class="empty-icon-wrapper">
-                <i class="fa-solid fa-film fa-4x" aria-hidden="true"></i>
+                <i class="fa-solid fa-film fa-3x" aria-hidden="true"></i>
             </div>
-            <h2>Aún no hay películas</h2>
-            <p>El catálogo estará disponible pronto.<br>¡Vuelve más tarde para ver las películas!</p>
+            <h2>No se encontraron películas</h2>
+            <p id="empty-state-message">No hay resultados para tu búsqueda o filtro actual.</p>
+            <button id="btn-reset-filters" class="btn btn-secondary mt-2">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Ver todo el catálogo
+            </button>
         </div>
         
+        <!-- Rejilla de Películas -->
         <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
-            <!-- Las tarjetas de películas se generarán aquí con JS -->
+            <!-- Renderizado dinámico optimizado -->
         </div>
+
+        <!-- Indicador de Carga para Infinite Scroll -->
+        <div id="infinite-loading" class="infinite-loading hidden" aria-live="polite">
+            <div class="infinite-spinner"></div>
+            <span>Cargando más títulos...</span>
+        </div>
+
+        <!-- Centinela para Infinite Scroll con IntersectionObserver -->
+        <div id="scroll-sentinel" class="scroll-sentinel" aria-hidden="true"></div>
     </main>
 
     <!-- Footer -->
     <footer role="contentinfo">
-        <div class="container">
-            <p>Ky! Movies &copy; 2026. Tu catálogo de películas.</p>
+        <div class="container footer-content">
+            <p><strong>Ky! Movies</strong> &copy; 2026. Catálogo ligero, rápido y moderno.</p>
+            <p class="footer-subtext">Datos e imágenes provistos por TMDB API.</p>
         </div>
     </footer>
 
-    <!-- Carrito Flotante (Dock) -->
-    <div id="floating-cart" class="floating-cart hide-dock" role="complementary" aria-label="Mis películas">
-        <div class="cart-info cursor-pointer" id="btn-view-list" title="Ver mis películas" tabindex="0" role="button" aria-label="Ver mis películas seleccionadas">
+    <!-- Dock Flotante Ergonómico -->
+    <div id="floating-cart" class="floating-cart hide-dock" role="region" aria-label="Películas seleccionadas">
+        <div class="cart-info" id="btn-view-list" tabindex="0" role="button" aria-label="Ver películas seleccionadas">
             <div class="cart-badge"><span id="cart-count">0</span></div>
             <span class="cart-label">Mis películas</span>
             <i class="fa-solid fa-chevron-up toggle-icon" aria-hidden="true"></i>
         </div>
         <div class="cart-separator" aria-hidden="true"></div>
         <div class="cart-actions">
-            <button id="btn-copy-list" class="btn btn-secondary" title="Copiar lista" aria-label="Copiar lista">
-                <i class="fa-regular fa-copy" aria-hidden="true"></i> <span>Copiar</span>
+            <button id="btn-copy-list" class="btn btn-dock btn-copy" title="Copiar lista al portapapeles" aria-label="Copiar lista">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                <span class="btn-dock-text">Copiar</span>
+            </button>
+            <button id="btn-share-whatsapp" class="btn btn-dock btn-whatsapp" title="Compartir en WhatsApp o nativo" aria-label="Compartir en WhatsApp">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                <span class="btn-dock-text">Compartir</span>
             </button>
         </div>
     </div>
 
-    <!-- Modal de Lista Seleccionada -->
+    <!-- Modal de Películas Seleccionadas -->
     <div id="selection-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="selection-modal-title">
+        <div class="modal-backdrop" data-close-modal="selection"></div>
         <div class="modal-content glass-panel modal-lg">
             <div class="modal-header">
-                <h2 id="selection-modal-title">Mis películas (<span id="modal-cart-count">0</span>)</h2>
-                <button class="close-selection-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-bookmark gradient-text" aria-hidden="true"></i>
+                    <h2 id="selection-modal-title">Mis películas (<span id="modal-cart-count">0</span>)</h2>
+                </div>
+                <button class="close-selection-modal close-modal-btn" aria-label="Cerrar modal">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
             </div>
+            
             <div class="modal-body">
                 <ul id="selected-movies-list" class="selected-list" role="list">
-                    <!-- Lista de peliculas renderizadas por JS -->
+                    <!-- Elementos seleccionados -->
                 </ul>
-                <div class="modal-footer">
-                    <!-- Botón limpiar eliminado -->
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-deselect-all-modal" class="btn btn-danger-outline" aria-label="Vaciar selección">
+                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Vaciar lista
+                </button>
+                <div class="modal-footer-actions">
+                    <button id="btn-copy-modal" class="btn btn-secondary" aria-label="Copiar lista">
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i> Copiar
+                    </button>
+                    <button id="btn-share-modal" class="btn btn-whatsapp" aria-label="Compartir por WhatsApp">
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Compartir
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Synopsis (Long Press) -->
+    <!-- Modal de Sinopsis y Detalles -->
     <div id="synopsis-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="synopsis-modal-title">
-        <div class="modal-content glass-panel">
+        <div class="modal-backdrop" data-close-modal="synopsis"></div>
+        <div class="modal-content glass-panel modal-detail">
             <div class="modal-header">
-                <h2 id="synopsis-modal-title">Sinopsis</h2>
-                <button class="close-synopsis-modal close-modal-btn" aria-label="Cerrar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-circle-info gradient-text" aria-hidden="true"></i>
+                    <h2 id="synopsis-modal-title">Detalles de la película</h2>
+                </div>
+                <button class="close-synopsis-modal close-modal-btn" aria-label="Cerrar modal">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <div id="synopsis-content" class="synopsis-content">
-                    <!-- Contenido del synopsis -->
+                    <!-- Contenido renderizado -->
                 </div>
+            </div>
+            <div class="modal-footer modal-footer-single">
+                <button id="btn-toggle-select-modal" class="btn btn-primary w-100" aria-label="Seleccionar o deseleccionar película">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> Seleccionar película
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="./app.js"></script>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
+    <script src="./app.js" defer></script>
 </body>
 </html>

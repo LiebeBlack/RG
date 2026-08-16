@@ -2,450 +2,257 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Información sobre Ky! Movies - Creador, uso, descarga y aspectos legales.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Información sobre Ky! Movies — Plataforma, creador, tecnologías y aspectos legales.">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Acerca de Ky! Movies">
-    <meta property="og:description" content="Información sobre el creador, uso legal y descarga de Ky! Movies.">
+    <meta property="og:description" content="Conoce más sobre el proyecto Ky! Movies, su diseño, tecnologías y términos de uso.">
     <meta property="og:type" content="website">
-    <meta name="theme-color" content="#0a0a0a">
-    <title>Acerca de Ky! Movies</title>
+    <meta name="theme-color" content="#090705">
+    <title>Acerca de — Ky! Movies</title>
+    <!-- Preconnect a Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Favicon SVG inline -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts Ultra-HD Crisp, Thin & Clean -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
     <style>
-        .about-container {
-            max-width: 900px;
+        .about-wrapper {
+            max-width: 860px;
             margin: 0 auto;
-            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        
-        .about-header {
+
+        .about-hero {
             text-align: center;
-            margin-bottom: 60px;
-            animation: headerGlow 2s ease-in-out infinite alternate;
+            padding: 30px 16px 20px;
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid rgba(139, 92, 246, 0.15);
         }
-        
-        .about-header h1 {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 3s ease-in-out infinite;
-            background-size: 200% 200%;
+
+        .about-hero h1 {
+            font-size: var(--font-h1);
+            margin-bottom: 10px;
         }
-        
-        .about-header p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.7);
-            animation: fadeInUp 1s ease-out 0.3s both;
+
+        .about-hero p {
+            color: var(--text-muted);
+            font-size: var(--font-body);
+            max-width: 600px;
+            margin: 0 auto;
         }
-        
-        .back-btn {
-            display: inline-flex;
+
+        .about-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-lg);
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: border-color var(--trans-fast);
+        }
+
+        .about-card:hover {
+            border-color: rgba(139, 92, 246, 0.35);
+        }
+
+        .about-card h2 {
+            font-size: var(--font-h2);
+            color: #ffffff;
+            margin-bottom: 14px;
+            display: flex;
             align-items: center;
+            gap: 10px;
+        }
+
+        .about-card h2 i {
+            color: var(--accent-light);
+            font-size: 1.2rem;
+        }
+
+        .about-card p {
+            color: var(--text-main);
+            line-height: 1.75;
+            margin-bottom: 12px;
+        }
+
+        .about-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
             gap: 12px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 16px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1rem;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            margin-bottom: 40px;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-            animation: bounceIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: var(--font-body);
         }
-        
-        .back-btn:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
+
+        .feature-item i {
+            color: var(--accent-light);
+            margin-top: 4px;
+            flex-shrink: 0;
         }
-        
-        .back-btn i {
-            animation: arrowPulse 2s ease-in-out infinite;
-        }
-        
-        .about-section {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-            border: 2px solid rgba(139, 92, 246, 0.2);
-            border-radius: 24px;
-            padding: 40px;
-            margin-bottom: 32px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 60px rgba(139, 92, 246, 0.1);
-            animation: sectionSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .about-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shimmerEffect 3s ease-in-out infinite;
-        }
-        
-        .about-section:hover {
-            transform: translateY(-8px) scale(1.02);
-            border-color: rgba(139, 92, 246, 0.4);
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 80px rgba(139, 92, 246, 0.2);
-        }
-        
-        .about-section h2 {
-            font-size: 1.8rem;
-            margin-bottom: 24px;
-            color: #fff;
+
+        .creator-badge {
             display: flex;
             align-items: center;
             gap: 16px;
-            animation: iconPulse 2s ease-in-out infinite;
-        }
-        
-        .about-section h2 i {
-            color: #8b5cf6;
-            font-size: 1.4em;
-            background: linear-gradient(135deg, #8b5cf6, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
-        }
-        
-        .about-section p {
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.9;
-            margin-bottom: 18px;
-            font-size: 1.05rem;
-        }
-        
-        .about-section ul {
-            color: rgba(255, 255, 255, 0.85);
-            line-height: 2;
-            margin-left: 24px;
-        }
-        
-        .about-section li {
-            margin-bottom: 14px;
-            position: relative;
-            padding-left: 8px;
-            animation: listItemFade 0.5s ease-out both;
-        }
-        
-        .about-section li::before {
-            content: '✨';
-            position: absolute;
-            left: -24px;
-            animation: sparkle 1.5s ease-in-out infinite;
-        }
-        
-        .creator-info {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            margin-top: 24px;
-            padding: 24px;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%);
-            border-radius: 20px;
+            padding: 16px;
+            background: rgba(139, 92, 246, 0.1);
             border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: var(--border-radius);
+            margin-top: 14px;
         }
-        
+
         .creator-avatar {
-            width: 100px;
-            height: 100px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+            background: var(--accent-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            color: white;
-            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
-            animation: avatarGlow 3s ease-in-out infinite alternate;
-            position: relative;
+            font-size: 1.5rem;
+            color: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
         }
-        
-        .creator-avatar::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6, #a855f7, #c084fc);
-            z-index: -1;
-            animation: avatarRing 2s linear infinite;
+
+        .creator-details {
+            font-size: var(--font-small);
+            color: var(--text-muted);
         }
-        
-        .highlight {
-            color: #8b5cf6;
-            font-weight: 700;
-            background: linear-gradient(135deg, #8b5cf6, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: textGlow 2s ease-in-out infinite alternate;
+
+        .creator-details strong {
+            color: #ffffff;
+            font-size: var(--font-body);
+            display: block;
         }
-        
-        strong {
-            color: #a78bfa;
-            font-weight: 600;
-        }
-        
-        /* Animaciones Premium */
-        @keyframes headerGlow {
-            0% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-            100% { text-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 60px rgba(168, 85, 247, 0.4); }
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
+
+        @media (max-width: 600px) {
+            .about-card {
+                padding: 18px 16px;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes bounceIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.8) translateY(20px);
-            }
-            50% {
-                transform: scale(1.05) translateY(-5px);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-        
-        @keyframes arrowPulse {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(-5px); }
-        }
-        
-        @keyframes sectionSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(40px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        
-        @keyframes shimmerEffect {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        
-        @keyframes iconPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        @keyframes listItemFade {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes sparkle {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-        
-        @keyframes avatarGlow {
-            0% { box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4); }
-            100% { box-shadow: 0 12px 48px rgba(139, 92, 246, 0.6), 0 0 60px rgba(168, 85, 247, 0.4); }
-        }
-        
-        @keyframes avatarRing {
-            0% { transform: rotate(0deg); opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { transform: rotate(360deg); opacity: 0.5; }
-        }
-        
-        @keyframes textGlow {
-            0% { text-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
-            100% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 30px rgba(168, 85, 247, 0.4); }
-        }
-        
-        @media (max-width: 768px) {
-            .about-container {
-                padding: 20px 16px;
-            }
-            
-            .about-section {
-                padding: 24px;
-                margin-bottom: 24px;
-            }
-            
-            .about-header h1 {
-                font-size: clamp(2rem, 8vw, 2.5rem);
-            }
-            
-            .creator-info {
+            .creator-badge {
                 flex-direction: column;
                 text-align: center;
-                padding: 20px;
-            }
-            
-            .creator-avatar {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
-            }
-            
-            .back-btn {
-                padding: 12px 20px;
-                font-size: 0.9rem;
             }
         }
     </style>
 </head>
 <body>
+
     <!-- Barra de Navegación -->
     <header class="glass-nav" role="banner">
         <div class="nav-container">
-            <a href="./index.html" class="logo" aria-label="Ky! Movies - Inicio">
-                <div class="logo-content">
-                    <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
-                    <h1 class="gradient-text">Ky! Movies</h1>
-                </div>
-            </a>
+            <div class="nav-top-row">
+                <a href="./index.html" class="logo" aria-label="Ky! Movies - Inicio">
+                    <div class="logo-content">
+                        <i class="fa-solid fa-film gradient-text" aria-hidden="true"></i>
+                        <span class="logo-text gradient-text">Ky! Movies</span>
+                    </div>
+                </a>
 
-            <a href="./about.html" class="nav-link active" aria-label="Información sobre el creador">
-                <i class="fa-solid fa-info-circle"></i>
-                <span>Acerca de</span>
-            </a>
-        </div>
-    </header>
-
-    <main class="about-container">
-        <a href="./index.html" class="back-btn">
-            <i class="fa-solid fa-arrow-left"></i>
-            Volver al catálogo
-        </a>
-
-        <div class="about-header">
-            <h1>Acerca de Ky! Movies</h1>
-            <p>Todo lo que necesitas saber sobre esta plataforma de películas</p>
-        </div>
-
-        <div class="about-section" style="animation-delay: 0.1s;">
-            <h2><i class="fa-solid fa-user-circle"></i> Sobre el Creador</h2>
-            <p>Ky! Movies fue desarrollado como un proyecto personal con el objetivo de facilitar la búsqueda y selección de películas de manera intuitiva y elegante.</p>
-            <div class="creator-info">
-                <div class="creator-avatar">
-                    <i class="fa-solid fa-code"></i>
-                </div>
-                <div>
-                    <p><strong>Desarrollador:</strong> Ky!</p>
-                    <p><strong>Versión:</strong> 2.0</p>
-                    <p><strong>Año:</strong> 2026</p>
+                <div class="nav-actions-top">
+                    <a href="./index.html" class="btn btn-secondary" style="min-height: 40px; padding: 8px 16px; font-size: var(--font-small);" aria-label="Volver al catálogo">
+                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                        <span>Volver al Catálogo</span>
+                    </a>
                 </div>
             </div>
         </div>
+    </header>
 
-        <div class="about-section" style="animation-delay: 0.2s;">
-            <h2><i class="fa-solid fa-desktop"></i> Uso de la Plataforma</h2>
-            <p>Ky! Movies es una interfaz moderna para explorar catálogos de películas. Algunas de sus características principales:</p>
-            <ul>
-                <li style="animation-delay: 0.3s;"><strong>Búsqueda inteligente:</strong> Encuentra películas por título rápidamente</li>
-                <li style="animation-delay: 0.4s;"><strong>Filtros por categoría:</strong> Navega por géneros como Acción, Aventura, Comedia, etc.</li>
-                <li style="animation-delay: 0.5s;"><strong>Selección múltiple:</strong> Elige tus películas favoritas y compártelas</li>
-                <li style="animation-delay: 0.6s;"><strong>Interfaz responsive:</strong> Funciona perfectamente en dispositivos móviles y escritorio</li>
-                <li style="animation-delay: 0.7s;"><strong>Animaciones suaves:</strong> Experiencia de usuario fluida y agradable</li>
-            </ul>
-        </div>
+    <!-- Contenido Principal -->
+    <main class="container" role="main" style="padding-top: 10px;">
+        <div class="about-wrapper">
+            <div class="about-hero">
+                <h1 class="gradient-text">Acerca de Ky! Movies</h1>
+                <p>Catálogo cinematográfico ligero, veloz y optimizado para compartir.</p>
+            </div>
 
-        <div class="about-section" style="animation-delay: 0.3s;">
-            <h2><i class="fa-solid fa-download"></i> Descarga e Instalación</h2>
-            <p>Para usar Ky! Movies localmente:</p>
-            <ul>
-                <li style="animation-delay: 0.4s;">Descarga el repositorio completo desde GitHub</li>
-                <li style="animation-delay: 0.5s;">Abre el archivo <code>index.html</code> en tu navegador</li>
-                <li style="animation-delay: 0.6s;">No requiere instalación ni configuración adicional</li>
-                <li style="animation-delay: 0.7s;">Funciona completamente offline (excepto las imágenes de TMDB)</li>
-            </ul>
-        </div>
+            <!-- Sobre el Proyecto -->
+            <section class="about-card">
+                <h2><i class="fa-solid fa-circle-play" aria-hidden="true"></i> ¿Qué es Ky! Movies?</h2>
+                <p>
+                    <strong>Ky! Movies</strong> es una aplicación web interactiva diseñada para explorar y compartir películas con velocidad instantánea, cero consumo excesivo de batería o datos y máxima ergonomía en teléfonos móviles.
+                </p>
+                <div class="creator-badge">
+                    <div class="creator-avatar">
+                        <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
+                    </div>
+                    <div class="creator-details">
+                        <strong>Ky! Movies v2.5</strong>
+                        <span>Ultraligero • Optimizado para todos los smartphones</span>
+                    </div>
+                </div>
+            </section>
 
-        <div class="about-section" style="animation-delay: 0.4s;">
-            <h2><i class="fa-solid fa-gavel"></i> Aspectos Legales</h2>
-            <p><strong class="highlight">Aviso Legal Importante:</strong></p>
-            <ul>
-                <li style="animation-delay: 0.5s;">Ky! Movies es una <strong>interfaz de visualización</strong> que utiliza la API pública de TMDB (The Movie Database)</li>
-                <li style="animation-delay: 0.6s;">Esta plataforma <strong>no aloja ni distribuye contenido protegido por derechos de autor</strong></li>
-                <li style="animation-delay: 0.7s;">Solamente muestra información y carteles de películas que son de dominio público o disponibles en bases de datos públicas</li>
-                <li style="animation-delay: 0.8s;">El usuario es responsable del uso que haga de la información mostrada</li>
-                <li style="animation-delay: 0.9s;">Las imágenes son propiedad de sus respectivos dueños y se muestran bajo fair use</li>
-            </ul>
-        </div>
+            <!-- Características -->
+            <section class="about-card">
+                <h2><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Principales Funcionalidades</h2>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <div><strong>Búsqueda instantánea con cancelación activa:</strong> Escribe con fluidez sin congelamientos ni peticiones colgadas.</div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <div><strong>Filtros por género y ordenación rápida:</strong> Navega por categorías o descubre los títulos mejor calificados y más recientes.</div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <div><strong>Selección múltiple inteligente:</strong> Elige películas y mantén tu lista intacta aunque cambies de categoría o busques.</div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <div><strong>Compartir en WhatsApp y Web Share:</strong> Envía tu lista formateada con un solo toque desde tu smartphone.</div>
+                    </li>
+                    <li class="feature-item">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <div><strong>Infinite Scroll con 0 fugas de memoria:</strong> Desplazamiento fluido sin saturar el dispositivo.</div>
+                    </li>
+                </ul>
+            </section>
 
-        <div class="about-section" style="animation-delay: 0.5s;">
-            <h2><i class="fa-solid fa-balance-scale"></i> Justificación del Proyecto</h2>
-            <p>Ky! Movies fue creado con los siguientes propósitos:</p>
-            <ul>
-                <li style="animation-delay: 0.6s;"><strong>Educativo:</strong> Como proyecto de aprendizaje en desarrollo web moderno</li>
-                <li style="animation-delay: 0.7s;"><strong>Práctico:</strong> Para facilitar la organización y selección de películas</li>
-                <li style="animation-delay: 0.8s;"><strong>Tecnológico:</strong> Para demostrar el uso de APIs públicas como TMDB</li>
-                <li style="animation-delay: 0.9s;"><strong>Open Source:</strong> Para contribuir a la comunidad de desarrolladores</li>
-            </ul>
-            <p>El proyecto respeta los términos de servicio de TMDB y las leyes de propiedad intelectual.</p>
-        </div>
-
-        <div class="about-section" style="animation-delay: 0.6s;">
-            <h2><i class="fa-solid fa-heart"></i> Agradecimientos</h2>
-            <p>Este proyecto utiliza tecnologías y recursos de código abierto:</p>
-            <ul>
-                <li style="animation-delay: 0.7s;"><strong>TMDB API:</strong> Por proporcionar la base de datos de películas</li>
-                <li style="animation-delay: 0.8s;"><strong>FontAwesome:</strong> Por los iconos utilizados en la interfaz</li>
-                <li style="animation-delay: 0.9s;"><strong>Google Fonts:</strong> Por las tipografías Inter y Outfit</li>
-                <li style="animation-delay: 1.0s;"><strong>Comunidad Open Source:</strong> Por inspiración y recursos</li>
-            </ul>
+            <!-- Aviso Legal & TMDB -->
+            <section class="about-card">
+                <h2><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Aviso Legal y Créditos</h2>
+                <p>
+                    Este producto utiliza la API de <strong>The Movie Database (TMDB)</strong> pero no está respaldado ni certificado oficialmente por TMDB.
+                </p>
+                <p>
+                    <strong>Ky! Movies</strong> es una interfaz de catálogo de información y no aloja, transmite ni almacena archivos multimedia ni contenido con derechos de autor. Todos los carteles, descripciones y metadatos pertenecen a sus respectivos creadores y estudios.
+                </p>
+            </section>
         </div>
     </main>
 
-    <footer class="footer">
-        <p>&copy; 2026 Ky! Movies. Todos los derechos reservados.</p>
+    <!-- Footer -->
+    <footer role="contentinfo">
+        <div class="container footer-content">
+            <p><strong>Ky! Movies</strong> &copy; 2026. Tu catálogo de cine favorito.</p>
+            <p class="footer-subtext">Diseñado con altos estándares de accesibilidad y rendimiento web.</p>
+        </div>
     </footer>
 
-    <script>
-        // Animación de entrada para las secciones
-        document.addEventListener('DOMContentLoaded', () => {
-            const sections = document.querySelectorAll('.about-section');
-            sections.forEach((section, index) => {
-                section.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
-    </script>
 </body>
 </html>
