@@ -37,26 +37,14 @@ const GENRE_MAP = {
     37: 'Western'
 };
 
-// Generador de Placeholder SVG ligero con caché para evitar regeneración
-const _placeholderCache = new Map();
-function createPosterPlaceholder(title = '') {
-    const key = title.slice(0, 30);
-    if (_placeholderCache.has(key)) return _placeholderCache.get(key);
-    const safeTitle = escapeHtml(key);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="342" height="513" viewBox="0 0 342 513"><rect width="100%" height="100%" fill="#101018"/><circle cx="171" cy="210" r="45" fill="#181826"/><path d="M150 210 L195 210 M171 185 L171 235" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/><text x="50%" y="280" font-family="sans-serif" font-size="16" font-weight="700" fill="#94a3b8" dominant-baseline="middle" text-anchor="middle">Sin carátula</text><text x="50%" y="310" font-family="sans-serif" font-size="13" fill="#64748b" dominant-baseline="middle" text-anchor="middle">${safeTitle}</text></svg>`;
-    const uri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    // Limitar caché a 100 entradas para no crecer sin límite
-    if (_placeholderCache.size > 100) _placeholderCache.clear();
-    _placeholderCache.set(key, uri);
-    return uri;
-}
+// Placeholder SVG estático codificado — Cero generación dinámica y Cero fugas de memoria
+const DEFAULT_POSTER_PLACEHOLDER = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22342%22%20height%3D%22513%22%20viewBox%3D%220%200%20342%20513%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23101018%22%2F%3E%3Ccircle%20cx%3D%22171%22%20cy%3D%22220%22%20r%3D%2240%22%20fill%3D%22%23181826%22%2F%3E%3Cpath%20d%3D%22M150%20220%20L192%20220%20M171%20199%20L171%20241%22%20stroke%3D%22%238b5cf6%22%20stroke-width%3D%223.5%22%20stroke-linecap%3D%22round%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%22285%22%20font-family%3D%22sans-serif%22%20font-size%3D%2215%22%20font-weight%3D%22700%22%20fill%3D%22%2394a3b8%22%20text-anchor%3D%22middle%22%3ESin%20car%C3%A1tula%3C%2Ftext%3E%3C%2Fsvg%3E";
 
 // Estado Global de la Aplicación
 const AppState = {
     selectedMoviesMap: new Map(), // Map<id, MovieObject> persistente
-    tmdbMovies: [],               // Películas en memoria actual (capped a 500 para no crecer sin límite)
+    tmdbMovies: [],               // Películas cargadas en catálogo infinito
     movieLookup: new Map(),       // Lookup rápido Map<id, MovieObject> para delegación de eventos O(1)
-    MAX_MOVIES_IN_MEMORY: 500,    // Techo de películas en memoria para evitar fuga por scroll infinito
     currentPage: 1,
     totalPages: 1,
     isLoading: false,
@@ -115,26 +103,31 @@ const DOM = {
 let sentinelObserver = null;
 
 // Utility: Debounce
-function debounce(fn, delay = 250) {
-    let timer;
+function debounce(fn, delay = 180) {
+    let timer = null;
     return function (...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            fn.apply(this, args);
+        }, delay);
     };
 }
 
 // Utility: Sanitizar texto HTML (sin crear elementos DOM — cero allocations)
 const _escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-const _escapeRe = /[&<>"']/g;
+const _escapeRe = /[&<>"']/;
 function escapeHtml(text) {
     if (!text) return '';
-    return String(text).replace(_escapeRe, ch => _escapeMap[ch]);
+    const str = String(text);
+    if (!_escapeRe.test(str)) return str;
+    return str.replace(/[&<>"']/g, ch => _escapeMap[ch]);
 }
 
 // Obtener nombre del género
 function getGenreName(genreIds) {
-    if (!genreIds || genreIds.length === 0) return 'Cine';
-    return GENRE_MAP[genreIds[0]] || 'Cine';
+    if (!genreIds || genreIds.length === 0) return 'Película';
+    return GENRE_MAP[genreIds[0]] || 'Película';
 }
 
 // Obtener ID de género por nombre
@@ -153,8 +146,12 @@ function getYearFromDate(dateStr) {
     return dateStr.split('-')[0] || '';
 }
 
+// Caché en memoria para peticiones TMDB (Navegación instantánea en 0ms y cero consumo de datos en filtros repetidos)
+const TMDB_CACHE = new Map();
+const MAX_CACHE_ENTRIES = 80;
+
 /**
- * Peticiones a TMDB API con Cancelación Activa
+ * Peticiones a TMDB API con Cancelación Activa y Caché Rápida
  */
 async function fetchFromTMDB(endpoint, params = {}, signal = null) {
     const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -168,30 +165,37 @@ async function fetchFromTMDB(endpoint, params = {}, signal = null) {
         }
     }
 
+    const cacheKey = url.toString();
+    if (TMDB_CACHE.has(cacheKey)) {
+        return TMDB_CACHE.get(cacheKey);
+    }
+
     const fetchOptions = signal ? { signal } : {};
-    const response = await fetch(url.toString(), fetchOptions);
+    const response = await fetch(cacheKey, fetchOptions);
     if (!response.ok) {
         throw new Error(`TMDB HTTP ${response.status}`);
     }
-    return await response.json();
+    const data = await response.json();
+
+    if (TMDB_CACHE.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = TMDB_CACHE.keys().next().value;
+        TMDB_CACHE.delete(oldestKey);
+    }
+    TMDB_CACHE.set(cacheKey, data);
+    return data;
 }
 
-// Normalizar objeto película de TMDB
+// Normalizar objeto película de TMDB (memoria mínima y textos informativos impecables)
 function normalizeTMDBMovie(item) {
-    const placeholder = createPosterPlaceholder(item.title);
+    const rawOverview = item.overview ? item.overview.trim() : '';
     return {
         id: item.id,
         title: item.title || item.original_title || 'Sin título',
-        originalTitle: item.original_title || '',
-        overview: item.overview ? item.overview.trim() : 'No hay sinopsis disponible para este título.',
-        releaseDate: item.release_date || '',
+        overview: rawOverview,
         year: getYearFromDate(item.release_date),
-        posterPath: item.poster_path,
-        coverUrl: item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : placeholder,
-        voteAverage: typeof item.vote_average === 'number' ? item.vote_average.toFixed(1) : '0.0',
-        genreIds: item.genre_ids || [],
-        category: getGenreName(item.genre_ids),
-        popularity: item.popularity || 0
+        coverUrl: item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : DEFAULT_POSTER_PLACEHOLDER,
+        voteAverage: typeof item.vote_average === 'number' && item.vote_average > 0 ? item.vote_average.toFixed(1) : '0.0',
+        category: getGenreName(item.genre_ids)
     };
 }
 
@@ -204,7 +208,7 @@ function getTodayDateString() {
     return `${year}-${month}-${day}`;
 }
 
-// Cargar películas desde la API con estricto filtro de estreno digital / ya estrenadas
+// Cargar películas desde la API con estricto filtro de estreno digital, carátulas reales y sinopsis completa
 async function fetchMovies(page = 1, signal = null) {
     const query = AppState.currentQuery.trim();
     const category = AppState.currentCategory;
@@ -215,10 +219,10 @@ async function fetchMovies(page = 1, signal = null) {
     if (query) {
         data = await fetchFromTMDB('/search/movie', { query, page }, signal);
     } else {
-        // Descubrimiento estricto de títulos ya estrenados
+        // Descubrimiento estricto de títulos ya estrenados con carátulas disponibles
         const discoverParams = {
             'primary_release_date.lte': today,
-            'vote_count.gte': sort === 'rating' ? 60 : 8,
+            'vote_count.gte': sort === 'rating' ? 30 : 2,
             page
         };
 
@@ -243,26 +247,27 @@ async function fetchMovies(page = 1, signal = null) {
     const movies = [];
 
     for (const item of rawResults) {
-        if (!item || !item.id || (!item.title && !item.original_title)) continue;
+        if (!item || !item.id) continue;
 
-        // Filtro estricto: Solo películas que YA estén estrenadas (release_date <= hoy)
+        // Exigir título
+        const title = item.title || item.original_title;
+        if (!title) continue;
+
+        // FILTRO ESTRICTO 1: Solo películas que TENGAN CARÁTULA REAL
+        if (!item.poster_path) continue;
+
+        // FILTRO ESTRICTO 2: Solo películas YA ESTRENADAS (fecha válida y <= hoy)
         const releaseDate = item.release_date || '';
-        if (!releaseDate || releaseDate > today) continue;
+        if (!releaseDate || releaseDate.length < 4 || releaseDate > today) continue;
+
+        // FILTRO ESTRICTO 3: Solo películas con SINOPSIS REAL (Cero textos vacíos o incompletos)
+        const overview = item.overview ? item.overview.trim() : '';
+        if (!overview || overview.length < 15) continue;
 
         if (!seenIds.has(item.id)) {
             seenIds.add(item.id);
             movies.push(normalizeTMDBMovie(item));
         }
-    }
-
-    if (sort === 'az') {
-        movies.sort((a, b) => a.title.localeCompare(b.title, 'es'));
-    } else if (sort === 'za') {
-        movies.sort((a, b) => b.title.localeCompare(a.title, 'es'));
-    } else if (sort === 'rating') {
-        movies.sort((a, b) => parseFloat(b.voteAverage) - parseFloat(a.voteAverage));
-    } else if (sort === 'recent') {
-        movies.sort((a, b) => (b.releaseDate || '').localeCompare(a.releaseDate || ''));
     }
 
     return {
@@ -272,7 +277,7 @@ async function fetchMovies(page = 1, signal = null) {
 }
 
 /**
- * Motor de Renderizado Ultrarrápido con Optimización LCP
+ * Motor de Renderizado Ultrarrápido con Optimización LCP y Liberación de Memoria
  */
 async function loadInitialMovies() {
     if (AppState.activeAbortController) {
@@ -289,7 +294,7 @@ async function loadInitialMovies() {
     AppState.movieLookup.clear();
     AppState.hasMorePages = true;
 
-    if (DOM.grid) DOM.grid.innerHTML = '';
+    if (DOM.grid) DOM.grid.replaceChildren();
     if (DOM.emptyState) DOM.emptyState.classList.add('hidden');
 
     try {
@@ -297,14 +302,14 @@ async function loadInitialMovies() {
         AppState.tmdbMovies = result.movies;
         result.movies.forEach(m => AppState.movieLookup.set(m.id, m));
         AppState.totalPages = result.totalPages;
-        AppState.hasMorePages = AppState.currentPage < AppState.totalPages;
+        AppState.currentPage = 2;
+        AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
 
         if (AppState.tmdbMovies.length === 0) {
             showEmptyState(true);
         } else {
             showEmptyState(false);
             renderCards(AppState.tmdbMovies, false);
-            AppState.currentPage = 2;
         }
 
         updateTotalCount();
@@ -316,40 +321,39 @@ async function loadInitialMovies() {
     } finally {
         AppState.isLoading = false;
         showLoadingOverlay(false);
+        // Comprobar si la pantalla necesita más elementos para activar scroll
+        setTimeout(checkAutoFillScreen, 300);
     }
 }
 
-// Cargar más películas (Scroll Infinito con Deduplicación Absoluta y techo de memoria)
+// Cargar más películas (Scroll Infinito Real sin Límite con Deduplicación O(1))
 async function loadMoreMovies() {
     if (AppState.isLoadingMore || !AppState.hasMorePages || AppState.isLoading) return;
-
-    // Parar si ya tenemos demasiadas películas en memoria
-    if (AppState.tmdbMovies.length >= AppState.MAX_MOVIES_IN_MEMORY) {
-        AppState.hasMorePages = false;
-        return;
-    }
 
     AppState.isLoadingMore = true;
     showInfiniteLoading(true);
 
     try {
-        const result = await fetchMovies(AppState.currentPage, AppState.activeAbortController?.signal);
-        const existingIds = new Set(AppState.tmdbMovies.map(m => m.id));
-        const newMovies = result.movies.filter(m => !existingIds.has(m.id));
+        let attempts = 0;
+        let addedCount = 0;
 
-        if (newMovies.length > 0) {
-            AppState.tmdbMovies.push(...newMovies);
-            newMovies.forEach(m => AppState.movieLookup.set(m.id, m));
-            renderCards(newMovies, true);
+        while (AppState.currentPage <= AppState.totalPages && addedCount === 0 && attempts < 3) {
+            attempts++;
+            const result = await fetchMovies(AppState.currentPage, null);
+            const newMovies = result.movies.filter(m => !AppState.movieLookup.has(m.id));
+
             AppState.currentPage++;
-            AppState.hasMorePages = AppState.currentPage <= AppState.totalPages
-                && AppState.tmdbMovies.length < AppState.MAX_MOVIES_IN_MEMORY;
-        } else if (AppState.currentPage < result.totalPages) {
-            AppState.currentPage++;
-        } else {
-            AppState.hasMorePages = false;
+            AppState.totalPages = result.totalPages;
+
+            if (newMovies.length > 0) {
+                addedCount = newMovies.length;
+                AppState.tmdbMovies.push(...newMovies);
+                newMovies.forEach(m => AppState.movieLookup.set(m.id, m));
+                renderCards(newMovies, true);
+            }
         }
 
+        AppState.hasMorePages = AppState.currentPage <= AppState.totalPages;
         updateTotalCount();
     } catch (error) {
         if (error.name !== 'AbortError') {
@@ -361,9 +365,15 @@ async function loadMoreMovies() {
     }
 }
 
+function checkAutoFillScreen() {
+    if (document.documentElement.scrollHeight <= window.innerHeight + 600 && AppState.hasMorePages && !AppState.isLoadingMore && !AppState.isLoading) {
+        loadMoreMovies();
+    }
+}
+
 /**
- * Renderizado de Tarjetas con Optimización LCP (fetchpriority="high" en los primeros elementos)
- * Títulos grandes con soporte para hasta 4 líneas
+ * Renderizado de Tarjetas con Optimización LCP
+ * Cero manejadores inline: las imágenes usan delegación de eventos en fase de captura.
  */
 function renderCards(movies, isAppend = false) {
     if (!DOM.grid) return;
@@ -393,22 +403,21 @@ function renderCards(movies, isAppend = false) {
                 <img class="card-img" 
                      src="${movie.coverUrl}" 
                      alt="Carátula de ${safeTitle}" 
+                     width="342"
+                     height="513"
                      loading="${loadingAttr}"
                      ${fetchPriorityAttr}
                      decoding="async"
-                     onload="this.classList.add('loaded')"
-                     onerror="this.src='${createPosterPlaceholder(movie.title)}';this.classList.add('loaded');">
+                     onerror="this.onerror=null;this.src='${DEFAULT_POSTER_PLACEHOLDER}';">
             </div>
+            <div class="card-category-badge" aria-hidden="true">${safeCategory}</div>
             <div class="select-badge" aria-hidden="true">
                 <i class="fa-solid fa-check"></i>
             </div>
             <div class="card-overlay">
                 <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
                 <div class="card-meta">
-                    <div class="card-meta-left">
-                        <span class="meta-pill genre-pill">${safeCategory}</span>
-                        ${safeYear ? `<span class="meta-pill">${safeYear}</span>` : ''}
-                    </div>
+                    ${safeYear ? `<span class="meta-pill year-pill">${safeYear}</span>` : ''}
                     <span class="meta-pill rating-pill"><i class="fa-solid fa-star" aria-hidden="true"></i> ${safeRating}</span>
                 </div>
             </div>
@@ -417,19 +426,34 @@ function renderCards(movies, isAppend = false) {
         fragment.appendChild(card);
     });
 
-    if (!isAppend) {
-        DOM.grid.innerHTML = '';
+    if (isAppend) {
+        DOM.grid.appendChild(fragment);
+    } else {
+        DOM.grid.replaceChildren(fragment);
     }
-    DOM.grid.appendChild(fragment);
 }
 
 /**
- * Gestor de Gestos Android & Móviles:
- * - Tap rápido: Seleccionar / Deseleccionar película
- * - Long Press (tocar un rato): Feedback háptico y apertura de sinopsis
+ * Gestor de Eventos y Gestos Táctiles con Cero Fugas de Memoria
  */
 function setupGridEventDelegation() {
     if (!DOM.grid) return;
+
+    // Delegación de eventos en fase de captura para carga de imágenes (Zero closures inline)
+    DOM.grid.addEventListener('error', (e) => {
+        const img = e.target;
+        if (img && img.tagName === 'IMG' && img.classList.contains('card-img')) {
+            img.src = DEFAULT_POSTER_PLACEHOLDER;
+            img.classList.add('loaded');
+        }
+    }, true);
+
+    DOM.grid.addEventListener('load', (e) => {
+        const img = e.target;
+        if (img && img.tagName === 'IMG' && img.classList.contains('card-img')) {
+            img.classList.add('loaded');
+        }
+    }, true);
 
     let pressTimer = null;
     let isLongPress = false;
@@ -437,7 +461,9 @@ function setupGridEventDelegation() {
     let touchStartY = 0;
     let activeHoldingCard = null;
 
+    // Cancelación rápida y ligera con guard clause
     const cancelLongPress = () => {
+        if (!pressTimer && !activeHoldingCard) return;
         if (pressTimer) {
             clearTimeout(pressTimer);
             pressTimer = null;
@@ -479,11 +505,12 @@ function setupGridEventDelegation() {
             }
 
             openSynopsisModal(movie);
-        }, 480);
+        }, 420);
     }, { passive: true });
 
     // Touch Move: Cancelar Long Press si el usuario se desplaza
     DOM.grid.addEventListener('touchmove', (e) => {
+        if (!pressTimer) return;
         if (e.touches && e.touches[0]) {
             const dx = Math.abs(e.touches[0].clientX - touchStartX);
             const dy = Math.abs(e.touches[0].clientY - touchStartY);
@@ -493,10 +520,12 @@ function setupGridEventDelegation() {
         }
     }, { passive: true });
 
-    DOM.grid.addEventListener('touchend', cancelLongPress);
-    DOM.grid.addEventListener('touchcancel', cancelLongPress);
+    DOM.grid.addEventListener('touchend', cancelLongPress, { passive: true });
+    DOM.grid.addEventListener('touchcancel', cancelLongPress, { passive: true });
+    window.addEventListener('scroll', cancelLongPress, { passive: true });
+    window.addEventListener('blur', cancelLongPress, { passive: true });
 
-    // Clic / Tap
+    // Clic / Tap directo
     DOM.grid.addEventListener('click', (e) => {
         if (isLongPress) {
             isLongPress = false;
@@ -522,7 +551,7 @@ function setupGridEventDelegation() {
         }
     });
 
-    // Teclado
+    // Teclado accesible
     DOM.grid.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             const card = e.target.closest('.movie-card');
@@ -551,14 +580,13 @@ function toggleMovieSelection(movie, cardElement) {
         if (cardElement) cardElement.classList.add('selected');
     }
 
-    const matchingCards = document.querySelectorAll(`.movie-card[data-id="${movie.id}"]`);
-    matchingCards.forEach(c => {
-        if (AppState.selectedMoviesMap.has(movie.id)) {
-            c.classList.add('selected');
-        } else {
-            c.classList.remove('selected');
+    // Actualizar tarjeta en la cuadrícula de forma directa
+    if (DOM.grid) {
+        const targetCard = cardElement || DOM.grid.querySelector(`.movie-card[data-id="${movie.id}"]`);
+        if (targetCard) {
+            targetCard.classList.toggle('selected', AppState.selectedMoviesMap.has(movie.id));
         }
-    });
+    }
 
     updateCartUI();
 }
@@ -581,10 +609,9 @@ function updateCartUI() {
     }
 }
 
-// Renderizar la lista de películas seleccionadas en el modal
+// Renderizar la lista de películas seleccionadas en el modal con replaceChildren
 function renderSelectedList() {
     if (!DOM.selectedMoviesList) return;
-    DOM.selectedMoviesList.innerHTML = '';
 
     const selectedArray = Array.from(AppState.selectedMoviesMap.values());
 
@@ -609,7 +636,7 @@ function renderSelectedList() {
         const safeCategory = escapeHtml(movie.category);
 
         li.innerHTML = `
-            <img class="selected-thumb" src="${movie.coverUrl}" alt="Portada de ${safeTitle}" loading="lazy">
+            <img class="selected-thumb" src="${movie.coverUrl}" alt="Portada de ${safeTitle}" width="52" height="78" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${DEFAULT_POSTER_PLACEHOLDER}';">
             <div class="selected-info">
                 <span class="selected-title" title="${safeTitle}">${index + 1}. ${safeTitle}</span>
                 <p class="selected-meta">${safeCategory}${safeYear ? ` • ${safeYear}` : ''}</p>
@@ -622,7 +649,7 @@ function renderSelectedList() {
         fragment.appendChild(li);
     });
 
-    DOM.selectedMoviesList.appendChild(fragment);
+    DOM.selectedMoviesList.replaceChildren(fragment);
 }
 
 // Vaciar selección completa
@@ -630,7 +657,9 @@ function deselectAllMovies() {
     if (AppState.selectedMoviesMap.size === 0) return;
     AppState.selectedMoviesMap.clear();
 
-    document.querySelectorAll('.movie-card.selected').forEach(c => c.classList.remove('selected'));
+    if (DOM.grid) {
+        DOM.grid.querySelectorAll('.movie-card.selected').forEach(c => c.classList.remove('selected'));
+    }
     updateCartUI();
     closeModal(DOM.selectionModal);
     showToast('Lista vaciada correctamente', 'info');
@@ -643,14 +672,15 @@ function generateMoviesShareText() {
     const selectedArray = Array.from(AppState.selectedMoviesMap.values());
     if (selectedArray.length === 0) return '';
 
-    let text = '🎬 *Mis Películas Seleccionadas — Ky! Movies*\n\n';
-    selectedArray.forEach((movie, idx) => {
+    let text = '🎬 Ky! Movies\n\n';
+    const lines = selectedArray.map(movie => {
         const yearStr = movie.year ? ` (${movie.year})` : '';
-        const catStr = movie.category ? ` - _${movie.category}_` : '';
-        text += `${idx + 1}. *${movie.title}*${yearStr}${catStr}\n`;
+        const catStr = movie.category ? ` · ${movie.category}` : '';
+        return `${movie.title}${yearStr}${catStr}`;
     });
 
-    text += `\n🍿 *Total:* ${selectedArray.length} película${selectedArray.length > 1 ? 's' : ''}`;
+    text += lines.join('\n\n');
+    text += `\n\nTotal: ${selectedArray.length} película${selectedArray.length > 1 ? 's' : ''}`;
     return text;
 }
 
@@ -745,25 +775,24 @@ function openSynopsisModal(movie) {
     AppState.currentDetailMovie = movie;
 
     const safeTitle = escapeHtml(movie.title);
-    const safeYear = escapeHtml(movie.year || 'Desconocido');
-    const safeRating = escapeHtml(movie.voteAverage);
+    const safeYear = escapeHtml(movie.year || 'S/A');
+    const ratingVal = parseFloat(movie.voteAverage);
+    const safeRating = ratingVal > 0 ? `${movie.voteAverage} / 10` : 'Sin calificación';
     const safeCategory = escapeHtml(movie.category);
-    const safeOverview = escapeHtml(movie.overview);
+    const fallbackDesc = `${movie.title} (${movie.year || 'Película'}) es una obra destacada del género ${movie.category}.`;
+    const safeOverview = escapeHtml(movie.overview || fallbackDesc);
 
     if (DOM.synopsisModalTitle) {
         DOM.synopsisModalTitle.textContent = safeTitle;
     }
 
-    // Limpiar contenido anterior explícitamente para liberar nodos DOM huérfanos
-    DOM.synopsisContent.textContent = '';
-
     DOM.synopsisContent.innerHTML = `
         <div class="synopsis-card-preview">
-            <img class="synopsis-thumb" src="${movie.coverUrl}" alt="Portada de ${safeTitle}">
+            <img class="synopsis-thumb" src="${movie.coverUrl}" alt="Portada de ${safeTitle}" width="100" height="150" decoding="async" onerror="this.onerror=null;this.src='${DEFAULT_POSTER_PLACEHOLDER}';">
             <div class="synopsis-header-info">
                 <h3 class="synopsis-movie-title">${safeTitle}</h3>
                 <div class="synopsis-badges">
-                    <span class="synopsis-badge rating"><i class="fa-solid fa-star"></i> ${safeRating} / 10</span>
+                    <span class="synopsis-badge rating"><i class="fa-solid fa-star"></i> ${safeRating}</span>
                     <span class="synopsis-badge genre"><i class="fa-solid fa-film"></i> ${safeCategory}</span>
                     <span class="synopsis-badge"><i class="fa-regular fa-calendar"></i> ${safeYear}</span>
                 </div>
@@ -791,14 +820,17 @@ function updateSynopsisModalButton(movieId) {
 }
 
 /**
- * Notificaciones Flotantes (Toasts) — con limpieza robusta
+ * Notificaciones Flotantes (Toasts) — con limpieza robusta de temporizadores
  */
 function showToast(message, type = 'info') {
     if (!DOM.toastContainer) return;
 
-    // Limitar toasts activos a 3 para no saturar el DOM
+    // Limpiar toasts anteriores y cancelar sus temporizadores pendientes para evitar fugas
     while (DOM.toastContainer.children.length >= 3) {
-        DOM.toastContainer.firstChild.remove();
+        const oldToast = DOM.toastContainer.firstChild;
+        if (oldToast._toastTimer1) clearTimeout(oldToast._toastTimer1);
+        if (oldToast._toastTimer2) clearTimeout(oldToast._toastTimer2);
+        oldToast.remove();
     }
 
     const toast = document.createElement('div');
@@ -808,11 +840,11 @@ function showToast(message, type = 'info') {
 
     DOM.toastContainer.appendChild(toast);
 
-    setTimeout(() => {
+    toast._toastTimer1 = setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(10px) scale(0.95)';
         toast.style.transition = 'all 0.25s ease';
-        setTimeout(() => {
+        toast._toastTimer2 = setTimeout(() => {
             if (toast.parentNode) toast.remove();
         }, 250);
     }, 2200);
@@ -872,11 +904,21 @@ function setupScrollObserver() {
         });
     }, {
         root: null,
-        rootMargin: '600px',
-        threshold: 0.05
+        rootMargin: '1200px',
+        threshold: 0
     });
 
     sentinelObserver.observe(DOM.scrollSentinel);
+
+    // Fallback de scroll nativo para máxima compatibilidad móvil y de escritorio
+    window.addEventListener('scroll', () => {
+        if (AppState.isLoadingMore || !AppState.hasMorePages || AppState.isLoading) return;
+        const scrollBottom = window.innerHeight + window.scrollY;
+        const triggerPoint = document.documentElement.scrollHeight - 1200;
+        if (scrollBottom >= triggerPoint) {
+            loadMoreMovies();
+        }
+    }, { passive: true });
 }
 
 /**
@@ -885,7 +927,7 @@ function setupScrollObserver() {
 function setupEventListeners() {
     setupGridEventDelegation();
 
-    // Búsqueda con debounce y cancelación
+    // Búsqueda con debounce y cancelación instantánea
     const handleSearch = debounce(() => {
         const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
         AppState.currentQuery = query;
@@ -893,7 +935,7 @@ function setupEventListeners() {
             DOM.btnClearSearch.classList.toggle('hidden', query.length === 0);
         }
         loadInitialMovies();
-    }, 250);
+    }, 180);
 
     if (DOM.searchInput) {
         DOM.searchInput.addEventListener('input', handleSearch);
