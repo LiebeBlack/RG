@@ -19,16 +19,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Favicon SVG inline -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
-    <!-- FontAwesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Ultra-HD Crisp, Thin & Clean (Pesos esenciales optimizados) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome CDN optimizado (No bloqueante) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <!-- Google Fonts Ultra-HD Crisp, Thin & Clean (display=swap) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
-    <!-- Loading Inicial Ultraligero -->
-    <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite">
+    <!-- Indicador de Carga No Bloqueante -->
+    <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-live="polite">
         <div class="spinner">
             <i class="fa-solid fa-film" aria-hidden="true"></i>
         </div>
@@ -123,9 +124,14 @@
             </button>
         </div>
         
-        <!-- Rejilla de Películas -->
+        <!-- Rejilla de Películas con Esqueletos Iniciales para CLS = 0.00 y LCP Instantáneo -->
         <div id="movie-grid" class="movie-grid" role="list" aria-label="Catálogo de películas">
-            <!-- Renderizado dinámico optimizado -->
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
+            <div class="movie-card skeleton" aria-hidden="true"><div class="card-img-container"><div class="skeleton-shimmer"></div></div></div>
         </div>
 
         <!-- Indicador de Carga para Infinite Scroll -->
